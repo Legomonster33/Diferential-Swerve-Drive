@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "d:/Users/Sigle/Documents/GitHub/Diffy-Swerve-Arduino",
-      "program": "d:/Users/Sigle/Documents/GitHub/Diffy-Swerve-Arduino/build/Debug/outDebug",
+      "cwd": "d:/Users/Sigle/Documents/GitHub/Diffy-Swerve-Arduino/_LegoSwerve/_Code/mcpwm_servo_control",
+      "program": "d:/Users/Sigle/Documents/GitHub/Diffy-Swerve-Arduino/_LegoSwerve/_Code/mcpwm_servo_control/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
