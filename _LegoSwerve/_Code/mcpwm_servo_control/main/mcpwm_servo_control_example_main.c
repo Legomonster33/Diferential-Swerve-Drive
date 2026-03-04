@@ -11,7 +11,7 @@
 #include "esp_private/esp_clk.h"
 #include "driver/mcpwm_cap.h"
 #include "driver/gpio.h"
-#include "esp_timer.h"
+#include "driver/gptimer.h"
 
 static const char *TAG = "example";
 
@@ -31,6 +31,8 @@ static const char *TAG = "example";
 
 #define TIMEBASE_RESOLUTION_HZ 1000000  // 1MHz, 1us per tick
 #define SERVO_TIMEBASE_PERIOD        5000    // 5000 ticks, 5ms
+
+
 
 
 
@@ -60,11 +62,12 @@ static inline uint32_t map_speed_to_pulsewidth(int speed)
 
 
 
+static gptimer_handle_t gptimer = NULL;
 
 typedef struct {
 uint32_t hall_timestamps[64];
 uint32_t hall_timestamp_index;
-uint64_t last_time_esp_timer;
+uint64_t gptimer_last_timestamp;
 } hall_data_t;
 
 static hall_data_t hall_1_data = {0};
@@ -86,17 +89,40 @@ static bool hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcp
 
     hall_data->hall_timestamp_index = (hall_data->hall_timestamp_index + 1) % 64;
 
-    ESP_EARLY_LOGI(TAG, "Hall sensor triggered! Timestamp: %u", edgetimestamp);
+    gptimer_get_raw_count(gptimer, &hall_data->gptimer_last_timestamp);
 
-    hall_data->last_time_esp_timer = esp_timer_get_time();
+    ESP_EARLY_LOGI(TAG, "Hall sensor triggered! Timestamp: %u", edgetimestamp);
 
     return false; // return true to yield at the end of ISR
 }
 
 
 
+
+
+
 void app_main(void)
 {
+
+    ESP_LOGI(TAG, "Create gptimer");
+    gptimer_config_t gp_timer_config = {
+        .clk_src = GPTIMER_CLK_SRC_DEFAULT,
+        .direction = GPTIMER_COUNT_UP,
+        .resolution_hz = 1000000, // 1MHz, 1 tick=1us
+    };
+    ESP_ERROR_CHECK(gptimer_new_timer(&gp_timer_config, &gptimer));
+
+    ESP_LOGI(TAG, "Enable timer");
+    ESP_ERROR_CHECK(gptimer_enable(gptimer));
+    ESP_ERROR_CHECK(gptimer_start(gptimer));
+
+
+
+
+
+
+
+
     ESP_LOGI(TAG, "Install capture timer");
     mcpwm_cap_timer_handle_t cap_timer = NULL;
     mcpwm_capture_timer_config_t cap_conf = {
@@ -206,11 +232,15 @@ void app_main(void)
         for (int i = 0; i < 64; i++) {
             ESP_LOGI(TAG, "Hall timestamp[%d]: %u us",i,local_copy.hall_timestamps[i]);
         }
+        
+        ESP_LOGI(TAG, "GPTimer last timestamp: %llu us", local_copy.gptimer_last_timestamp);
 
-        ESP_LOGI(TAG, "Last hall timestamp: %lld us", local_copy.hall_timestamps[(local_copy.hall_timestamp_index - 1) % 64]);
-        
-        
-        ESP_LOGI(TAG, "Current timer count: %lld us", esp_timer_get_time());
+        uint64_t current_timestamp;
+
+        gptimer_get_raw_count(gptimer, &current_timestamp);
+
+        ESP_LOGI(TAG, "Current GPTimer timestamp: %llu us", current_timestamp);
+
 
 
         ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(comparator, map_speed_to_pulsewidth(speed)));
