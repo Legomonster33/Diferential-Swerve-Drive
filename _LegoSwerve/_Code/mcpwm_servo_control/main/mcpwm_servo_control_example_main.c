@@ -22,8 +22,8 @@ static const char *TAG = "example";
 #define MAX_PULSEWIDTH 2000  // Maximum pulse width in microsecond
 #define CENTER_PULSE ((MIN_PULSEWIDTH + MAX_PULSEWIDTH) / 2) // Center pulse width in microsecond
 
-#define MIN_SPEED        -100
-#define MAX_SPEED        100
+#define MIN_SPEED        -1000
+#define MAX_SPEED        1000
 
 #define MOTOR_1_GPIO             25        // GPIO connects to the PWM signal line
 
@@ -33,7 +33,7 @@ static const char *TAG = "example";
 #define SERVO_TIMEBASE_PERIOD        5000    // 5000 ticks, 5ms
 
 
-#define PULSES_PER_REV 12
+#define PULSES_PER_REV 6
 #define TIMER_FREQ_HZ 80000000ULL   // 80 MHz timer (microseconds)
 
 bool main_isr_flag = false;
@@ -43,6 +43,7 @@ static gptimer_handle_t gptimer = NULL;
 typedef struct {
     uint32_t hall_timestamps[64];
     uint32_t hall_timestamps_index;
+    uint32_t hall_timestamps_last_index;
     uint32_t total_trigger_count;
     uint32_t last_total_trigger_count;
     uint32_t difference_total_triggers_last_update;
@@ -50,7 +51,7 @@ typedef struct {
     enum {
         MODE_SINGLE_PERIOD,
         MODE_MULTIPLE_PERIOD,
-        MODE_FIXED_INTERVAL,
+        //MODE_FIXED_INTERVAL,
     }mode;
 } hall_data_t;
 
@@ -85,77 +86,69 @@ static inline uint32_t map_speed_to_pulsewidth(int speed)
 
 
 
+
+
+
+
+
 uint32_t calculate_rpm(hall_data_t *hall_data)
 {
     uint32_t rpm = 0;
 
     switch (hall_data->mode)
     {
-        // ---------------------------------------------------------
-        // MODE_FIXED_INTERVAL: count pulses over last 200Hz interval
-        // ---------------------------------------------------------
-        case MODE_FIXED_INTERVAL:
+        /*case MODE_FIXED_INTERVAL:
         {
             uint32_t pulses = hall_data->difference_total_triggers_last_update;
-
-            // Each loop is 1/200 s → scale to per minute: RPM = (pulses / interval_sec) * 60 / PULSES_PER_REV
-            // interval_sec = 1/200 = 0.005 s → multiply pulses by 60 / 0.005 = 12000
             rpm = (pulses * 12000U) / PULSES_PER_REV;
             break;
         }
+        */
 
-        // ---------------------------------------------------------
-        // MODE_SINGLE_PERIOD: last two pulses
-        // ---------------------------------------------------------
         case MODE_SINGLE_PERIOD:
         {
-            uint32_t idx = hall_data->hall_timestamps_index;
 
-            if (idx >= 2)
-            {
-                uint32_t newest = hall_data->hall_timestamps[(idx - 1) % 64];
-                uint32_t previous = hall_data->hall_timestamps[(idx - 2) % 64];
 
-                uint32_t dt;
-                if (newest >= previous)
-                    dt = newest - previous;
-                else
-                    dt = (0xFFFFFFFF - previous) + newest + 1; // handle wrap-around
+            uint32_t current_index  = hall_data->hall_timestamps_index;
 
-                if (dt > 0)
-                {
-                    rpm = (uint32_t)(
-                        (60ULL * TIMER_FREQ_HZ) / ((uint64_t)dt * PULSES_PER_REV)
-                    );
+            uint32_t newer_index = (current_index + 63) % 64; // index of last written timestamp
+            uint32_t older_index = (current_index + 62) % 64; // index of the timestamp before last written
+
+            uint32_t newer = hall_data->hall_timestamps[newer_index];
+            uint32_t older = hall_data->hall_timestamps[older_index];
+
+            uint32_t dt;
+
+            dt = newer - older;
+            
+            if (newer != older){
+                rpm =((60ULL * TIMER_FREQ_HZ)/(dt * PULSES_PER_REV));
                 }
-            }
-            break;
+        break;
+       
         }
 
-        // ---------------------------------------------------------
-        // MODE_MULTIPLE_PERIOD: average over last N pulses
-        // ---------------------------------------------------------
         case MODE_MULTIPLE_PERIOD:
-        {
-            uint32_t count = hall_data->hall_timestamps_index;
+{
+            uint32_t current_index  = hall_data->hall_timestamps_index;
+            uint32_t previous_index = hall_data->hall_timestamps_last_index;
 
-            if (count >= 2)
-            {
-                uint32_t samples = (count > 64) ? 64 : count;
+            // calculate number of new pulses since last update
+            uint32_t new_count = (current_index >= previous_index)
+                                ? current_index - previous_index
+                                : 64 - previous_index + current_index;
 
+            
                 uint64_t total_dt = 0;
                 uint32_t valid_periods = 0;
 
-                for (uint32_t i = 1; i < samples; i++)
+                // loop over new periods
+                for (uint32_t i = 1; i < new_count; i++)
                 {
-                    uint32_t newer = hall_data->hall_timestamps[(count - i) % 64];
-                    uint32_t older = hall_data->hall_timestamps[(count - i - 1) % 64];
+                    uint32_t newer = hall_data->hall_timestamps[(current_index - i + 64) % 64];
+                    uint32_t older = hall_data->hall_timestamps[(current_index - i - 1 + 64) % 64];
 
-                    uint32_t dt;
-                    if (newer >= older)
-                        dt = newer - older;
-                    else
-                        dt = (0xFFFFFFFF - older) + newer + 1; // handle wrap
+                    uint32_t dt = newer - older; // unsigned subtraction handles wrap automatically
 
                     if (dt > 0)
                     {
@@ -169,11 +162,13 @@ uint32_t calculate_rpm(hall_data_t *hall_data)
                     uint64_t avg_dt = total_dt / valid_periods;
 
                     rpm = (uint32_t)(
-                        (60ULL * TIMER_FREQ_HZ) / (avg_dt * PULSES_PER_REV)
+                        (60ULL * TIMER_FREQ_HZ) /
+                        (avg_dt * PULSES_PER_REV)
                     );
                 }
-            }
-            break;
+
+    break;
+
         }
     }
 
@@ -208,13 +203,13 @@ static bool hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcp
 
     hall_data->total_trigger_count++;
 
-    switch(hall_data->mode) {
+    /*switch(hall_data->mode) {
         case MODE_FIXED_INTERVAL:
             return false;
 
         case MODE_SINGLE_PERIOD:
         case MODE_MULTIPLE_PERIOD:
-
+    */
             uint32_t edgetimestamp = edata->cap_value;
 
             hall_data->hall_timestamps[hall_data->hall_timestamps_index] = edgetimestamp;
@@ -223,9 +218,9 @@ static bool hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcp
 
             gptimer_get_raw_count(gptimer, &hall_data->gptimer_last_timestamp);
 
-                return false;
+            return false;
             
-    }
+    //}
     return false;
     //ESP_EARLY_LOGI(TAG, "Hall sensor triggered! Timestamp: %u", edgetimestamp);
 
@@ -291,7 +286,7 @@ void app_main(void)
         .gpio_num = HALL_1_GPIO,
         .prescale = 1,
         // capture on both edge
-        .flags.neg_edge = true,
+        .flags.neg_edge = false,
         .flags.pos_edge = true,
         // pull up internally
         .flags.pull_up = true,
@@ -375,12 +370,14 @@ void app_main(void)
 
 
 
-    int speed = 15; //put to 6 for slowest
-    //int step = 1;
+    int speed = 0; //put to 6 for slowest
+    int step = 5;
 
     uint32_t rpm = 0;
 
     int loopcount = 0;
+
+    int speed_pause = 0;
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise wdtd triggers
@@ -388,41 +385,36 @@ void app_main(void)
         
 
         
-        // ESP_LOGI(TAG, "Speed: %d", speed);
+        
 
         hall_data_t local_copy = hall_1_data;
 
 
-        /*
-        for (int i = 0; i < 64; i++) {
-            ESP_LOGI(TAG, "Hall timestamp[%d]: %u ticks",i,local_copy.hall_timestamps[i]);
-        }
-        
-        ESP_LOGI(TAG, "GPTimer last timestamp: %llu ticks", local_copy.gptimer_last_timestamp);
-
-        uint64_t current_timestamp;
-
-        gptimer_get_raw_count(gptimer, &current_timestamp);
-        
         
 
-        ESP_LOGI(TAG, "Current GPTimer timestamp: %llu ticks", current_timestamp);
 
-        */
+        
             
         // at high rpms, its only counting 2 or 3 pulses because its going into fixed interval mode, but the interval is way too short, needs fixing.
 
         uint32_t pulses_this_loop = local_copy.difference_total_triggers_last_update;
 
-        if (pulses_this_loop < 10) {
+
+
+        if (pulses_this_loop < 2) {
         hall_1_data.mode = MODE_SINGLE_PERIOD;       // very low RPM
         }
-        else if (pulses_this_loop < 50) {
+        else {
         hall_1_data.mode = MODE_MULTIPLE_PERIOD;     // medium RPM
         }
+
+        /*
         else {
         hall_1_data.mode = MODE_FIXED_INTERVAL;      // high RPM
         }
+        */
+
+
 
         rpm = calculate_rpm(&local_copy);
 
@@ -435,34 +427,60 @@ void app_main(void)
         
         hall_1_data.last_total_trigger_count = hall_1_data.total_trigger_count;
 
-
+        hall_1_data.hall_timestamps_last_index = hall_1_data.hall_timestamps_index;
 
         ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(speed)));
 
-        /*if (speed == 0 || speed == MAX_SPEED || speed == MIN_SPEED || speed == 1 || speed == -1) {
-            vTaskDelay(pdMS_TO_TICKS(5000));
-        } 
-        else */
+        
         
 
-        /*
-        if (speed >= MAX_SPEED || speed <= MIN_SPEED) {
-            step *= -1;
-        }
-        
-        speed += step;
-        */
+        if (loopcount % 10 == 0) {
 
-        if (loopcount % 200 == 0) {
+                    
+            // Adjust speed
+            if (speed_pause > 0) {
+                speed_pause--;
+            } 
 
 
-            ESP_LOGI(TAG, "Total hall triggers: %u", local_copy.total_trigger_count);
+            else {
+                speed += step;
 
-            ESP_LOGI(TAG, "triggers since last update: %u", local_copy.difference_total_triggers_last_update);
+                if (speed >= MAX_SPEED || speed <= MIN_SPEED) {
+                    step *= -1;
+                    speed = (speed >= MAX_SPEED) ? MAX_SPEED : MIN_SPEED;
+                    speed_pause = 10;
+                }
+                
+                else if (speed == 0 || speed == 1 || speed == -1) {
+                    speed_pause = 10;
+                }
+            }
 
-            ESP_LOGI(TAG, "Current mode: %d", hall_1_data.mode);
+            /*
+            for (int i = 0; i < 64; i++) {
+                ESP_LOGI(TAG, "Hall timestamp[%d]: %u ticks",i,local_copy.hall_timestamps[i]);
+                }
+            */
+
+            //ESP_LOGI(TAG, "GPTimer last timestamp: %llu ticks", local_copy.gptimer_last_timestamp);
+
+            //uint64_t current_timestamp;
+
+            //gptimer_get_raw_count(gptimer, &current_timestamp);
+                
+
+            //ESP_LOGI(TAG, "Current GPTimer timestamp: %llu ticks", current_timestamp);
+
+            //ESP_LOGI(TAG, "Total hall triggers: %u", local_copy.total_trigger_count);
+
+            ESP_LOGI(TAG, "triggers since last update: %u", pulses_this_loop);
+
+            //ESP_LOGI(TAG, "Current mode: %d", hall_1_data.mode);
 
             ESP_LOGI(TAG, "Calculated RPM: %u", rpm);
+
+            ESP_LOGI(TAG, "Speed: %d", speed);
 
         }
 
