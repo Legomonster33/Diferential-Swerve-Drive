@@ -39,9 +39,6 @@ static const char *TAG = "Swerve:";
 
 #define MOTOR_STALL_TICKS 2000000
 
-static portMUX_TYPE myMux = portMUX_INITIALIZER_UNLOCKED;
-
-
 bool main_isr_flag = false;
 
 static gptimer_handle_t gptimer_200_hz = NULL;
@@ -426,9 +423,10 @@ void app_main(void)
 
         if (main_isr_flag){
         
-        portENTER_CRITICAL(&myMux);
 
-        uint32_t pulses_this_loop = hall_1_data.difference_total_triggers_last_update;
+        hall_data_t Hall_1_local_copy = hall_1_data;
+
+        uint32_t pulses_this_loop = Hall_1_local_copy.difference_total_triggers_last_update;
 
         if (pulses_this_loop < 3) {
             hall_1_data.mode = MODE_SINGLE_PERIOD;       // very low RPM
@@ -441,21 +439,17 @@ void app_main(void)
         gptimer_get_raw_count(gptimer_timestamping, &current_gptimer_timestamp);
 
         //compute new pulses since last update
-        hall_1_data.difference_total_triggers_last_update = hall_1_data.total_trigger_count - hall_1_data.last_total_trigger_count;
+        hall_1_data.difference_total_triggers_last_update = Hall_1_local_copy.total_trigger_count - Hall_1_local_copy.last_total_trigger_count;
 
         //save timestamp / last counts
         hall_1_data.gptimer_last_update_timestamp = current_gptimer_timestamp;
-        hall_1_data.last_total_trigger_count = hall_1_data.total_trigger_count;
-        hall_1_data.hall_timestamps_last_index = hall_1_data.hall_timestamps_index;
-
-        hall_data_t local_copy = hall_1_data;
-
-        portEXIT_CRITICAL(&myMux);
+        hall_1_data.last_total_trigger_count = Hall_1_local_copy.total_trigger_count;
+        hall_1_data.hall_timestamps_last_index = Hall_1_local_copy.hall_timestamps_index;
 
         
         //now calculate RPM using updated data
 
-        motor_1_rpm = calculate_rpm(local_copy);
+        motor_1_rpm = calculate_rpm(hall_1_data);
 
         if (Motor_1_new_speed < 0)
         {
@@ -502,17 +496,17 @@ void app_main(void)
 
             /*
             for (int i = 0; i < 64; i++) {
-                ESP_LOGI(TAG, "Hall timestamp[%d]: %u ticks",i,local_copy.hall_timestamps[i]);
+                ESP_LOGI(TAG, "Hall timestamp[%d]: %u ticks",i,Hall_1_local_copy.hall_timestamps[i]);
                 }
             */      
-            //ESP_LOGI(TAG, "Total hall triggers: %u", local_copy.total_trigger_count);
+            //ESP_LOGI(TAG, "Total hall triggers: %u", Hall_1_local_copy.total_trigger_count);
             ESP_LOGI(TAG, "triggers since last update: %u", pulses_this_loop);
             ESP_LOGI(TAG, "Current mode: %d", hall_1_data.mode);
             ESP_LOGI(TAG, "Calculated RPM: %f", motor_1_rpm);
             ESP_LOGI(TAG, "Speed: %f", Motor_1_new_speed);
             ESP_LOGI(TAG, "Error: %f", Motor_1_error);
-            //ESP_LOGI(TAG, "Last isr timestamp: %llu ticks", local_copy.gptimer_last_isr_timestamp);
-            //ESP_LOGI(TAG, "Last update timestamp: %llu ticks", local_copy.gptimer_last_update_timestamp);
+            //ESP_LOGI(TAG, "Last isr timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_isr_timestamp);
+            //ESP_LOGI(TAG, "Last update timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_update_timestamp);
         }
 
         loopcount++;
