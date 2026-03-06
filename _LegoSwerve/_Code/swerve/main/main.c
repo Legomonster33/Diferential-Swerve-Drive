@@ -138,11 +138,11 @@ float calculate_rpm(hall_data_t hall_data)
             if (newer != older){
                 rpm =((60ULL * TIMER_FREQ_HZ)/(dt * PULSES_PER_REV));
                 }
-
+            /*
             if (rpm == 0.0) {
                 ESP_LOGI(TAG, "Single period mode: newer timestamp: %u ticks, older timestamp: %u ticks, dt: %u ticks, rpm: %llu", newer, older, dt, rpm);
             }
-            
+            */
         break;
         
         }
@@ -174,9 +174,11 @@ float calculate_rpm(hall_data_t hall_data)
 
                 rpm = (60ULL * TIMER_FREQ_HZ) / (avg_dt * PULSES_PER_REV);
 
+                /*
                 if(rpm == 0.0 || rpm != rpm) { // Check for NaN
                     ESP_LOGI(TAG, "Multiple period mode: new_count: %u, valid_periods: %u, total_dt: %llu ticks, avg_dt: %llu ticks, rpm: %llu", new_count, valid_periods, total_dt, (valid_periods > 0) ? (total_dt / valid_periods) : 0, rpm);
                 }
+                */
 
     break;
 
@@ -483,11 +485,11 @@ void app_main(void)
                 if (target_rpm >= 3000 || target_rpm <= -3000) {
                     step *= -1;
                     target_rpm = (target_rpm >= 3000) ? 3000 : -3000;
-                    speed_pause = 200;
+                    speed_pause = 2000;
                 }
                 
                 else if (target_rpm == 0 || target_rpm == 1 || target_rpm == -1) {
-                    speed_pause = 100;
+                    speed_pause = 1000;
                 }
             }
         
