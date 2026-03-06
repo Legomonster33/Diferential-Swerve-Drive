@@ -398,10 +398,6 @@ void app_main(void)
     
 
 
-
-    //int speed = 0;
-    //int step = 1;
-
     float motor_1_rpm = 0;
 
     int loopcount = 0;
@@ -414,7 +410,11 @@ void app_main(void)
 
     float Motor_1_error = 0;
 
-    float target_rpm = 3000; // set desired RPM here
+    float target_rpm = 0; // set desired RPM here
+
+    float step = 0.5; // RPM step for testing
+
+    int speed_pause = 0;
 
 
     while (1) {
@@ -471,26 +471,26 @@ void app_main(void)
         
         // Adjust speed
 
-        /*
+        
             if (speed_pause > 0) {
                 speed_pause--;
             } 
 
 
             else {
-                speed += step;
+                target_rpm += step;
 
-                if (speed >= MAX_SPEED || speed <= MIN_SPEED) {
+                if (target_rpm >= 3000 || target_rpm <= -3000) {
                     step *= -1;
-                    speed = (speed >= MAX_SPEED) ? MAX_SPEED : MIN_SPEED;
-                    speed_pause = 2000;
+                    target_rpm = (target_rpm >= 3000) ? 3000 : -3000;
+                    speed_pause = 200;
                 }
                 
-                else if (speed == 0 || speed == 1 || speed == -1 || speed % 100 == 0) {
-                    speed_pause = 1000;
+                else if (target_rpm == 0 || target_rpm == 1 || target_rpm == -1) {
+                    speed_pause = 100;
                 }
             }
-        */
+        
 
         if (loopcount % 50== 0) { 
 
@@ -500,11 +500,14 @@ void app_main(void)
                 }
             */      
             //ESP_LOGI(TAG, "Total hall triggers: %u", Hall_1_local_copy.total_trigger_count);
-            ESP_LOGI(TAG, "triggers since last update: %u", pulses_this_loop);
-            ESP_LOGI(TAG, "Current mode: %d", hall_1_data.mode);
-            ESP_LOGI(TAG, "Calculated RPM: %f", motor_1_rpm);
-            ESP_LOGI(TAG, "Speed: %f", Motor_1_new_speed);
+            //ESP_LOGI(TAG, "triggers since last update: %u", pulses_this_loop);
+            //ESP_LOGI(TAG, "Current mode: %d", hall_1_data.mode);
+            
+            //ESP_LOGI(TAG, "Speed: %f", Motor_1_new_speed);
             ESP_LOGI(TAG, "Error: %f", Motor_1_error);
+
+            ESP_LOGI(TAG, "Calculated RPM: %f", motor_1_rpm);
+            ESP_LOGI(TAG, "Target RPM: %f", target_rpm);
             //ESP_LOGI(TAG, "Last isr timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_isr_timestamp);
             //ESP_LOGI(TAG, "Last update timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_update_timestamp);
         }
