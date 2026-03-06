@@ -12,6 +12,7 @@
 #include "driver/mcpwm_cap.h"
 #include "driver/gpio.h"
 #include "driver/gptimer.h"
+#include "pid_ctrl.h"
 
 static const char *TAG = "example";
 
@@ -379,7 +380,7 @@ void app_main(void)
 
 
 
-    int speed = 0; //put to 6 for slowest
+    int speed = 0;
     int step = 1;
 
     uint32_t rpm = 0;
@@ -452,6 +453,8 @@ void app_main(void)
         
         
         // Adjust speed
+
+        
             if (speed_pause > 0) {
                 speed_pause--;
             } 
@@ -460,17 +463,17 @@ void app_main(void)
             else {
                 speed += step;
 
-                if (speed >= MAX_SPEED/2 || speed <= MIN_SPEED/2) {
+                if (speed >= MAX_SPEED || speed <= MIN_SPEED) {
                     step *= -1;
-                    speed = (speed >= MAX_SPEED/2) ? MAX_SPEED/2 : MIN_SPEED/2;
-                    speed_pause = 200;
+                    speed = (speed >= MAX_SPEED) ? MAX_SPEED : MIN_SPEED;
+                    speed_pause = 2000;
                 }
                 
                 else if (speed == 0 || speed == 1 || speed == -1 || speed % 100 == 0) {
-                    speed_pause = 100;
+                    speed_pause = 1000;
                 }
             }
-
+        
 
         if (loopcount % 50== 0) { 
 
@@ -493,12 +496,11 @@ void app_main(void)
             ESP_LOGI(TAG, "Calculated RPM: %u", rpm);
 
             ESP_LOGI(TAG, "Speed: %d", speed);
-
             
            
-            ESP_LOGI(TAG, "Last isr timestamp: %llu ticks", local_copy.gptimer_last_isr_timestamp);
+            //ESP_LOGI(TAG, "Last isr timestamp: %llu ticks", local_copy.gptimer_last_isr_timestamp);
 
-            ESP_LOGI(TAG, "Last update timestamp: %llu ticks", local_copy.gptimer_last_update_timestamp);
+            //ESP_LOGI(TAG, "Last update timestamp: %llu ticks", local_copy.gptimer_last_update_timestamp);
 
 
         }
