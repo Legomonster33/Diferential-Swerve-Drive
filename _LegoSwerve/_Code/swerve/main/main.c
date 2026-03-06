@@ -426,7 +426,7 @@ void app_main(void)
 
         if (main_isr_flag){
         
-        taskENTER_CRITICAL(&myMux);
+        portENTER_CRITICAL(&myMux);
 
         uint32_t pulses_this_loop = hall_1_data.difference_total_triggers_last_update;
 
@@ -450,7 +450,7 @@ void app_main(void)
 
         hall_data_t local_copy = hall_1_data;
 
-        taskEXIT_CRITICAL(&myMux);
+        portEXIT_CRITICAL(&myMux);
 
         
         //now calculate RPM using updated data
