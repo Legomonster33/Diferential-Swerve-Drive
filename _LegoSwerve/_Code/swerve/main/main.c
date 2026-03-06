@@ -39,7 +39,7 @@ static const char *TAG = "Swerve:";
 
 #define MOTOR_STALL_TICKS 2000000
 
-
+static portMUX_TYPE myMux = portMUX_INITIALIZER_UNLOCKED;
 
 
 bool main_isr_flag = false;
@@ -101,9 +101,9 @@ static inline uint32_t map_speed_to_pulsewidth(int speed)
 
 
 
-uint64_t calculate_rpm(hall_data_t hall_data)
+float calculate_rpm(hall_data_t hall_data)
 {
-    uint64_t rpm = 0;
+    float rpm = 0.0;
 
 
     uint64_t dt_since_last_pulse = hall_data.gptimer_last_update_timestamp - hall_data.gptimer_last_isr_timestamp;
@@ -115,7 +115,7 @@ uint64_t calculate_rpm(hall_data_t hall_data)
     */
 
     if (dt_since_last_pulse > MOTOR_STALL_TICKS) {
-        rpm = 0;
+        rpm = 0.0;
         //ESP_LOGI(TAG, "0 rpm");
         return rpm;
     }
@@ -135,16 +135,14 @@ uint64_t calculate_rpm(hall_data_t hall_data)
             uint32_t newer = hall_data.hall_timestamps[newer_index];
             uint32_t older = hall_data.hall_timestamps[older_index];
 
-            uint32_t dt;
-
-            dt = newer - older;
+            uint32_t dt = newer - older;
 
                 
             if (newer != older){
                 rpm =((60ULL * TIMER_FREQ_HZ)/(dt * PULSES_PER_REV));
                 }
 
-            if (rpm == 0) {
+            if (rpm == 0.0) {
                 ESP_LOGI(TAG, "Single period mode: newer timestamp: %u ticks, older timestamp: %u ticks, dt: %u ticks, rpm: %llu", newer, older, dt, rpm);
             }
             
@@ -161,7 +159,7 @@ uint64_t calculate_rpm(hall_data_t hall_data)
             //P_LOGI(TAG, "New pulse count since last update: %u", new_count); // always 0 for some reason, must redo math
 
                 
-                double total_dt = 0;
+                double total_dt = 0.0;
                 uint32_t valid_periods = 0;
 
                 // loop over new periods
@@ -179,7 +177,7 @@ uint64_t calculate_rpm(hall_data_t hall_data)
 
                 rpm = (60ULL * TIMER_FREQ_HZ) / (avg_dt * PULSES_PER_REV);
 
-                if(rpm == 0) {
+                if(rpm == 0.0 || rpm != rpm) { // Check for NaN
                     ESP_LOGI(TAG, "Multiple period mode: new_count: %u, valid_periods: %u, total_dt: %llu ticks, avg_dt: %llu ticks, rpm: %llu", new_count, valid_periods, total_dt, (valid_periods > 0) ? (total_dt / valid_periods) : 0, rpm);
                 }
 
@@ -238,11 +236,11 @@ void app_main(void)
     ESP_LOGI(TAG, "Create PID control block");
     pid_ctrl_parameter_t Motor_1_pid_runtime_param = {
         .kp = 0.1,
-        .ki = 0.01,
+        .ki = 0.05,
         .kd = 0.0,
         .cal_type = PID_CAL_TYPE_POSITIONAL,
-        .max_output   = 250,
-        .min_output   = -250,
+        .max_output   = 500,
+        .min_output   = -500,
         .max_integral = 100000,
         .min_integral = -100000,
     };
@@ -407,7 +405,7 @@ void app_main(void)
     //int speed = 0;
     //int step = 1;
 
-    uint32_t rpm = 0;
+    float motor_1_rpm = 0;
 
     int loopcount = 0;
 
@@ -419,7 +417,7 @@ void app_main(void)
 
     float Motor_1_error = 0;
 
-    float target_rpm = 1000; // set desired RPM here
+    float target_rpm = 3000; // set desired RPM here
 
 
     while (1) {
@@ -428,10 +426,11 @@ void app_main(void)
 
         if (main_isr_flag){
         
-        
+        taskENTER_CRITICAL(&myMux);
+
         uint32_t pulses_this_loop = hall_1_data.difference_total_triggers_last_update;
 
-        if (pulses_this_loop < 2) {
+        if (pulses_this_loop < 3) {
             hall_1_data.mode = MODE_SINGLE_PERIOD;       // very low RPM
         } else
             {
@@ -449,16 +448,28 @@ void app_main(void)
         hall_1_data.last_total_trigger_count = hall_1_data.total_trigger_count;
         hall_1_data.hall_timestamps_last_index = hall_1_data.hall_timestamps_index;
 
-        //now calculate RPM using updated data
-        rpm = calculate_rpm(hall_1_data);
+        hall_data_t local_copy = hall_1_data;
 
-        Motor_1_error = target_rpm - rpm;
+        taskEXIT_CRITICAL(&myMux);
+
+        
+        //now calculate RPM using updated data
+
+        motor_1_rpm = calculate_rpm(local_copy);
+
+        if (Motor_1_new_speed < 0)
+        {
+            motor_1_rpm = -motor_1_rpm; 
+        }
+
+        Motor_1_error = target_rpm - motor_1_rpm;
 
         pid_compute(Motor_1_pid_ctrl, Motor_1_error, &Motor_1_new_speed);
-
+        
+        
 
         ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(Motor_1_new_speed)));
-        
+
 
 
         
@@ -497,7 +508,7 @@ void app_main(void)
             //ESP_LOGI(TAG, "Total hall triggers: %u", local_copy.total_trigger_count);
             ESP_LOGI(TAG, "triggers since last update: %u", pulses_this_loop);
             ESP_LOGI(TAG, "Current mode: %d", hall_1_data.mode);
-            ESP_LOGI(TAG, "Calculated RPM: %u", rpm);
+            ESP_LOGI(TAG, "Calculated RPM: %f", motor_1_rpm);
             ESP_LOGI(TAG, "Speed: %f", Motor_1_new_speed);
             ESP_LOGI(TAG, "Error: %f", Motor_1_error);
             //ESP_LOGI(TAG, "Last isr timestamp: %llu ticks", local_copy.gptimer_last_isr_timestamp);
