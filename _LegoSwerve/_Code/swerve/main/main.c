@@ -159,6 +159,7 @@ void app_main(void)
 
 
 
+
     ESP_LOGI(TAG, "Install capture timer");
     mcpwm_cap_timer_handle_t cap_timer = NULL;
     mcpwm_capture_timer_config_t cap_conf = {
@@ -278,9 +279,9 @@ void app_main(void)
 
         hall_data_t Hall_1_local_copy = hall_1_data;
 
-        uint32_t pulses_this_loop = Hall_1_local_copy.difference_total_triggers_last_update;
+        uint32_t hall_1_pulses_this_loop = Hall_1_local_copy.difference_total_triggers_last_update;
 
-        if (pulses_this_loop < 3) {
+        if (hall_1_pulses_this_loop < 3) {
             hall_1_data.mode = MODE_SINGLE_PERIOD;       // very low RPM
         } else
             {
@@ -324,21 +325,20 @@ void app_main(void)
         // Adjust speed
 
         
-            if (speed_pause > 0) {
+        if (speed_pause > 0) {
                 speed_pause--;
-            } 
+        } 
 
 
-            else {
-                motor_1_data.target_rpm += step;
+        else {
+            motor_1_data.target_rpm += step;
 
-                if (motor_1_data.target_rpm >= 3000 || motor_1_data.target_rpm <= -3000) {
+            if (motor_1_data.target_rpm >= 3000 || motor_1_data.target_rpm <= -3000) {
                     step *= -1;
                     motor_1_data.target_rpm = (motor_1_data.target_rpm >= 3000) ? 3000 : -3000;
                     speed_pause = 2000;
                 }
-                
-                else if (motor_1_data.target_rpm == 0 || motor_1_data.target_rpm == 1 || motor_1_data.target_rpm == -1) {
+            else if (motor_1_data.target_rpm == 0 || motor_1_data.target_rpm == 1 || motor_1_data.target_rpm == -1) {
                     speed_pause = 1000;
                 }
             }
@@ -352,7 +352,7 @@ void app_main(void)
                 }
             */      
             //ESP_LOGI(TAG, "Total hall triggers: %u", Hall_1_local_copy.total_trigger_count);
-            //ESP_LOGI(TAG, "triggers since last update: %u", pulses_this_loop);
+            //ESP_LOGI(TAG, "triggers since last update: %u", hall_1_pulses_this_loop);
             //ESP_LOGI(TAG, "Current mode: %d", hall_1_data.mode);
             
             ESP_LOGI(TAG, "Speed: %f", motor_1_data.new_speed);
