@@ -13,6 +13,8 @@
 #include "driver/gpio.h"
 #include "driver/gptimer.h"
 #include "pid_ctrl.h"
+#include "sdkconfig.h"
+
 
 #include "hall_data.h"
 #include "motor_data.h"
@@ -22,6 +24,8 @@
 #include "map_speed_to_pulsewidth.h"
 
 static const char *TAG = "Swerve:";
+
+#define SERIAL_STUDIO_DEBUG           CONFIG_SERIAL_STUDIO_DEBUG
 
 
 #define MOTOR_1_GPIO             25        // GPIO connects to the PWM signal line
@@ -272,6 +276,10 @@ void app_main(void)
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise wdtd triggers
+
+        #if SERIAL_STUDIO_DEBUG
+        printf("/*%d*/\r\n", motor_ctrl_ctx.report_pulses);
+        #endif
 
 
         if (main_isr_flag){
