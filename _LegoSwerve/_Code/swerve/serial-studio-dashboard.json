@@ -1,28 +1,112 @@
 {
+    "actions": [
+    ],
+    "activeGroupId": 0,
+    "checksum": "",
+    "dashboardLayout": {
+        "autoLayout": false,
+        "geometries": [
+            {
+                "height": 871,
+                "id": 0,
+                "state": "normal",
+                "width": 1561,
+                "x": 0,
+                "y": 0
+            }
+        ],
+        "windowOrder": [
+            0
+        ]
+    },
+    "decoder": 0,
+    "frameDetection": 1,
     "frameEnd": "*/",
+    "frameParser": "function parse(frame) {\n    return frame.split(',');\n}",
     "frameStart": "/*",
     "groups": [
         {
             "datasets": [
                 {
-                    "alarm": 1000,
+                    "alarmEnabled": false,
+                    "alarmHigh": 0,
+                    "alarmLow": 0,
                     "fft": false,
+                    "fftMax": 500,
+                    "fftMin": 0,
                     "fftSamples": 1024,
-                    "graph": true,
+                    "fftSamplingRate": -1,
+                    "graph": false,
+                    "index": 1,
                     "led": false,
+                    "ledHigh": 0,
                     "log": false,
-                    "max": 500,
-                    "min": 0,
-                    "title": "current speed",
-                    "units": "",
+                    "overviewDisplay": false,
+                    "plotMax": 10000,
+                    "plotMin": -10000,
+                    "title": "RPM",
+                    "units": "RPM",
                     "value": "%1",
-                    "widget": "gauge"
+                    "widget": "",
+                    "widgetMax": 10000,
+                    "widgetMin": 0,
+                    "xAxis": -1
+                },
+                {
+                    "alarmEnabled": false,
+                    "alarmHigh": 0,
+                    "alarmLow": 0,
+                    "fft": false,
+                    "fftMax": 500,
+                    "fftMin": 0,
+                    "fftSamples": 1024,
+                    "fftSamplingRate": -1,
+                    "graph": false,
+                    "index": 2,
+                    "led": false,
+                    "ledHigh": 0,
+                    "log": false,
+                    "overviewDisplay": false,
+                    "plotMax": 10000,
+                    "plotMin": -10000,
+                    "title": "Target RPM",
+                    "units": "RPM",
+                    "value": "%1",
+                    "widget": "",
+                    "widgetMax": 10000,
+                    "widgetMin": 0,
+                    "xAxis": -1
+                },
+                {
+                    "alarmEnabled": false,
+                    "alarmHigh": 0,
+                    "alarmLow": 0,
+                    "fft": false,
+                    "fftMax": 500,
+                    "fftMin": 0,
+                    "fftSamples": 1024,
+                    "fftSamplingRate": -1,
+                    "graph": false,
+                    "index": 3,
+                    "led": false,
+                    "ledHigh": 0,
+                    "log": false,
+                    "overviewDisplay": false,
+                    "plotMax": 1000,
+                    "plotMin": -1000,
+                    "title": "Output Speed",
+                    "units": "Speed",
+                    "value": "%1",
+                    "widget": "",
+                    "widgetMax": 10000,
+                    "widgetMin": 0,
+                    "xAxis": -1
                 }
             ],
-            "title": "speed",
-            "widget": ""
+            "title": "RPM",
+            "widget": "multiplot"
         }
     ],
-    "separator": ",",
-    "title": "Brushed DC Motor Speed"
+    "hexadecimalDelimiters": false,
+    "title": "Denso Speed"
 }

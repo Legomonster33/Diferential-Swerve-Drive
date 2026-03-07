@@ -25,7 +25,6 @@
 
 static const char *TAG = "Swerve:";
 
-#define SERIAL_STUDIO_DEBUG           CONFIG_SERIAL_STUDIO_DEBUG
 
 
 #define MOTOR_1_GPIO             25        // GPIO connects to the PWM signal line
@@ -265,21 +264,21 @@ void app_main(void)
 
     int loopcount = 0;
 
-    //int speed_pause = 0;
+    int speed_pause = 0;
 
     uint64_t current_gptimer_timestamp = 0;
 
-    float step = 0.5; // RPM step for testing
+    float step = 1; // RPM step for testing
 
-    int speed_pause = 0;
+    motor_1_data.target_rpm = 5000;
 
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise wdtd triggers
 
-        #if SERIAL_STUDIO_DEBUG
-        printf("/*%d*/\r\n", motor_ctrl_ctx.report_pulses);
-        #endif
+        
+        
+        
 
 
         if (main_isr_flag){
@@ -310,7 +309,13 @@ void app_main(void)
         
         //now calculate RPM using updated data
 
-        motor_1_data.rpm = calculate_rpm(hall_1_data);
+
+        motor_1_data.rpm = calculate_rpm(hall_1_data,motor_1_data.rpm);
+
+        if (motor_1_data.rpm < 500 && motor_1_data.rpm > -500){
+            ESP_LOGI(TAG,"low rpm %f, strange",motor_1_data.rpm);
+        }
+
 
         if (motor_1_data.new_speed < 0)
         {
@@ -332,7 +337,7 @@ void app_main(void)
         
         // Adjust speed
 
-        
+        /*
         if (speed_pause > 0) {
                 speed_pause--;
         } 
@@ -341,24 +346,26 @@ void app_main(void)
         else {
             motor_1_data.target_rpm += step;
 
-            if (motor_1_data.target_rpm >= 3000 || motor_1_data.target_rpm <= -3000) {
+            if (motor_1_data.target_rpm >= 5000 || motor_1_data.target_rpm <= -5000) {
                     step *= -1;
-                    motor_1_data.target_rpm = (motor_1_data.target_rpm >= 3000) ? 3000 : -3000;
+                    motor_1_data.target_rpm = (motor_1_data.target_rpm >= 5000) ? 5000 : -5000;
                     speed_pause = 2000;
                 }
-            else if (motor_1_data.target_rpm == 0 || motor_1_data.target_rpm == 1 || motor_1_data.target_rpm == -1) {
+            else if (motor_1_data.target_rpm == 0) {
                     speed_pause = 1000;
                 }
             }
+        */
         
+        //printf("/*%f,%f,%f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed);
 
+        /*
         if (loopcount % 50== 0) { 
 
-            /*
-            for (int i = 0; i < 64; i++) {
-                ESP_LOGI(TAG, "Hall timestamp[%d]: %u ticks",i,Hall_1_local_copy.hall_timestamps[i]);
-                }
-            */      
+            
+            //for (int i = 0; i < 64; i++) {
+            //    ESP_LOGI(TAG, "Hall timestamp[%d]: %u ticks",i,Hall_1_local_copy.hall_timestamps[i]);}
+                  
             //ESP_LOGI(TAG, "Total hall triggers: %u", Hall_1_local_copy.total_trigger_count);
             //ESP_LOGI(TAG, "triggers since last update: %u", hall_1_pulses_this_loop);
             //ESP_LOGI(TAG, "Current mode: %d", hall_1_data.mode);
@@ -372,6 +379,7 @@ void app_main(void)
             //ESP_LOGI(TAG, "Last isr timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_isr_timestamp);
             //ESP_LOGI(TAG, "Last update timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_update_timestamp);
         }
+        */
 
         loopcount++;
         

@@ -8,6 +8,6 @@
 
 #define MOTOR_STALL_TICKS 20000000
 
-float calculate_rpm(hall_data_t hall_data);
+float calculate_rpm(hall_data_t hall_data, float last_rpm);
 
 #endif
