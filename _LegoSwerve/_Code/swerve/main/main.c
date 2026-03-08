@@ -35,6 +35,7 @@ static const char *TAG = "Swerve:";
 #define SERVO_TIMEBASE_PERIOD        5000    // 5000 ticks, 5ms
 
 
+
 bool main_isr_flag = false;
 
 static gptimer_handle_t gptimer_200_hz = NULL;
@@ -45,6 +46,7 @@ static gptimer_handle_t gptimer_timestamping = NULL;
 static hall_data_t hall_1_data = {0};
 
 static motor_data_t motor_1_data = {0};
+
 
 
 
@@ -71,10 +73,11 @@ static bool hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcp
 
     hall_data->total_trigger_count++;
 
-
+    hall_data->hall_timestamps_index = (hall_data->hall_timestamps_index + 1) % 64;
+    
     hall_data->hall_timestamps[hall_data->hall_timestamps_index] = edgetimestamp;
 
-    hall_data->hall_timestamps_index = (hall_data->hall_timestamps_index + 1) % 64;
+    
 
 
     gptimer_get_raw_count(gptimer_timestamping, &current_gptimer_timestamp);
@@ -97,8 +100,8 @@ void app_main(void)
         .ki = 0.05,
         .kd = 0.0,
         .cal_type = PID_CAL_TYPE_POSITIONAL,
-        .max_output   = MAX_SPEED,
-        .min_output   = MIN_SPEED,
+        .max_output   = MAX_SPEED/2,
+        .min_output   = MIN_SPEED/2,
         .max_integral = 100000,
         .min_integral = -100000,
     };
@@ -270,8 +273,9 @@ void app_main(void)
 
     float step = 1; // RPM step for testing
 
-    motor_1_data.target_rpm = 5000;
+    motor_1_data.target_rpm = 4000;
 
+    ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(200)));
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise wdtd triggers
@@ -286,20 +290,8 @@ void app_main(void)
 
         hall_data_t Hall_1_local_copy = hall_1_data;
 
-        uint32_t hall_1_pulses_this_loop = Hall_1_local_copy.difference_total_triggers_last_update;
-
-        if (hall_1_pulses_this_loop < 3) {
-            hall_1_data.mode = MODE_SINGLE_PERIOD;       // very low RPM
-        } else
-            {
-            hall_1_data.mode = MODE_MULTIPLE_PERIOD;     // medium RPM
-        }
-        
         // capture current timestamp at update
         gptimer_get_raw_count(gptimer_timestamping, &current_gptimer_timestamp);
-
-        //compute new pulses since last update
-        hall_1_data.difference_total_triggers_last_update = Hall_1_local_copy.total_trigger_count - Hall_1_local_copy.last_total_trigger_count;
 
         //save timestamp / last counts
         hall_1_data.gptimer_last_update_timestamp = current_gptimer_timestamp;
@@ -312,10 +304,6 @@ void app_main(void)
 
         motor_1_data.rpm = calculate_rpm(hall_1_data,motor_1_data.rpm);
 
-        if (motor_1_data.rpm < 500 && motor_1_data.rpm > -500){
-            ESP_LOGI(TAG,"low rpm %f, strange",motor_1_data.rpm);
-        }
-
 
         if (motor_1_data.new_speed < 0)
         {
@@ -325,6 +313,8 @@ void app_main(void)
         motor_1_data.error = motor_1_data.target_rpm - motor_1_data.rpm;
 
         pid_compute(Motor_1_pid_ctrl, motor_1_data.error, &motor_1_data.new_speed);
+
+        motor_1_data.new_speed = 200;
         
         
 
@@ -359,27 +349,26 @@ void app_main(void)
         
         //printf("/*%f,%f,%f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed);
 
-        /*
-        if (loopcount % 50== 0) { 
+        
+        if (loopcount % 200== 0) { 
 
             
             //for (int i = 0; i < 64; i++) {
             //    ESP_LOGI(TAG, "Hall timestamp[%d]: %u ticks",i,Hall_1_local_copy.hall_timestamps[i]);}
                   
             //ESP_LOGI(TAG, "Total hall triggers: %u", Hall_1_local_copy.total_trigger_count);
-            //ESP_LOGI(TAG, "triggers since last update: %u", hall_1_pulses_this_loop);
             //ESP_LOGI(TAG, "Current mode: %d", hall_1_data.mode);
             
-            ESP_LOGI(TAG, "Speed: %f", motor_1_data.new_speed);
-            ESP_LOGI(TAG, "Error: %f", motor_1_data.error);
+            //ESP_LOGI(TAG, "Speed: %f", motor_1_data.new_speed);
+            //ESP_LOGI(TAG, "Error: %f", motor_1_data.error);
 
             ESP_LOGI(TAG, "Calculated RPM: %f", motor_1_data.rpm);
-            ESP_LOGI(TAG, "Target RPM: %f", motor_1_data.target_rpm);
+            //ESP_LOGI(TAG, "Target RPM: %f", motor_1_data.target_rpm);
 
             //ESP_LOGI(TAG, "Last isr timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_isr_timestamp);
             //ESP_LOGI(TAG, "Last update timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_update_timestamp);
         }
-        */
+        
 
         loopcount++;
         
