@@ -74,7 +74,7 @@ static bool hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcp
     hall_data->total_trigger_count++;
 
     hall_data->hall_timestamps_index = (hall_data->hall_timestamps_index + 1) % 64;
-    
+
     hall_data->hall_timestamps[hall_data->hall_timestamps_index] = edgetimestamp;
 
     
@@ -273,7 +273,7 @@ void app_main(void)
 
     float step = 1; // RPM step for testing
 
-    motor_1_data.target_rpm = 4000;
+    motor_1_data.target_rpm = 5000;
 
     ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(200)));
 
@@ -314,7 +314,6 @@ void app_main(void)
 
         pid_compute(Motor_1_pid_ctrl, motor_1_data.error, &motor_1_data.new_speed);
 
-        motor_1_data.new_speed = 200;
         
         
 
@@ -347,7 +346,7 @@ void app_main(void)
             }
         */
         
-        //printf("/*%f,%f,%f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed);
+        printf("/*%f,%f,%f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed);
 
         
         if (loopcount % 200== 0) { 
@@ -362,7 +361,7 @@ void app_main(void)
             //ESP_LOGI(TAG, "Speed: %f", motor_1_data.new_speed);
             //ESP_LOGI(TAG, "Error: %f", motor_1_data.error);
 
-            ESP_LOGI(TAG, "Calculated RPM: %f", motor_1_data.rpm);
+            //ESP_LOGI(TAG, "Calculated RPM: %f", motor_1_data.rpm);
             //ESP_LOGI(TAG, "Target RPM: %f", motor_1_data.target_rpm);
 
             //ESP_LOGI(TAG, "Last isr timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_isr_timestamp);

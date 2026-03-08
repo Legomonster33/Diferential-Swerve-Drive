@@ -33,9 +33,9 @@ float calculate_rpm(hall_data_t hall_data,float last_rpm) {
 
     uint64_t dt = 0;
 
-    int mode_ran = 0;
+    int mode_ran = 2;
 
-
+    
     if (pulses_since_last_update < 3) {
 
 
@@ -66,15 +66,15 @@ float calculate_rpm(hall_data_t hall_data,float last_rpm) {
         
     }
 
-    if (dt == 0) {
+    if (dt < MIN_VALID_DT) {
                 //ESP_LOGI(TAG, "dt is 0, returning last rpm %f", last_rpm);
                 return last_rpm; // avoid division by zero, return last known rpm
             }
             rpm =((60ULL * TIMER_FREQ_HZ)/(dt * PULSES_PER_REV));
 
 
-    /*
-    if (rpm != rpm || rpm > 10000 || rpm < -10000 || (rpm < 500 && rpm > -500)) {
+    
+    if (rpm != rpm || rpm > 6000 || rpm < -6000 || (rpm < 4000 && rpm > -4000)) {
         ESP_LOGI(TAG, "strange rpm %f", rpm);
         ESP_LOGI(TAG, "hall_data.hall_timestamps_index: %u", hall_data.hall_timestamps_index);
         ESP_LOGI(TAG, "hall_data.gptimer_last_update_timestamp: %llu", hall_data.gptimer_last_update_timestamp);
@@ -90,6 +90,6 @@ float calculate_rpm(hall_data_t hall_data,float last_rpm) {
             ESP_LOGI(TAG, "hall_timestamps[%d]: %u", i, hall_data.hall_timestamps[i]);
         }
     }
-    */
+    
     return rpm;
 }
