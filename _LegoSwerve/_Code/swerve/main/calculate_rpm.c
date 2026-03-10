@@ -1,5 +1,6 @@
 #include "calculate_rpm.h"
 #include "esp_log.h"
+#include "math.h"
 
 static const char *TAG = "calculate_rpm:";
 
@@ -20,15 +21,15 @@ float calculate_rpm(hall_data_t hall_data, motor_data_t *motor_data) {
     }
 
 
-    float pulses_per_second = (motor_data->target_rpm * PULSES_PER_REV) / 60.0f;
+    float pulses_per_second = (fabsf(motor_data->target_rpm) * PULSES_PER_REV) / 60.0f;
 
     uint32_t pulses_to_average = pulses_per_second * TARGET_WINDOW_SEC;
 
     if (pulses_to_average < 1)
-        pulses_to_average = 1;
+    pulses_to_average = 1;
 
     if (pulses_to_average > 64)
-        pulses_to_average = 64;
+    pulses_to_average = 64;
 
     uint32_t current_index  = hall_data.hall_timestamps_index;
     

@@ -101,7 +101,7 @@ void app_main(void)
         .kd = 0.0,
         .cal_type = PID_CAL_TYPE_INCREMENTAL,
         .max_output   = MAX_SPEED,
-        .min_output   = 0,
+        .min_output   = MIN_SPEED,
         .max_integral = 100000,
         .min_integral = -100000,
     };
@@ -267,15 +267,13 @@ void app_main(void)
 
     int loopcount = 0;
 
-    //int speed_pause = 0;
+    int speed_pause = 0;
 
     uint64_t current_gptimer_timestamp = 0;
 
-    //float step = 1; // RPM step for testing
+    float step = 1; // RPM step for testing
 
-    motor_1_data.target_rpm = 5000;
-
-    ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(200)));
+    motor_1_data.target_rpm = 0;
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise wdtd triggers
@@ -313,12 +311,12 @@ void app_main(void)
 
 
 
-        /*
+        
         if (motor_1_data.new_speed < 0)
         {
             motor_1_data.rpm = -motor_1_data.rpm; 
         }
-        */
+        
 
         motor_1_data.error = motor_1_data.target_rpm - motor_1_data.rpm;
 
@@ -336,7 +334,7 @@ void app_main(void)
         
         // Adjust speed
 
-        /*
+        
         if (speed_pause > 0) {
                 speed_pause--;
         } 
@@ -354,7 +352,7 @@ void app_main(void)
                     speed_pause = 1000;
                 }
             }
-        */
+        
         
         printf("/*%.1f,%.1f,%.1f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed);
 
