@@ -73,7 +73,7 @@ static bool hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcp
 
     hall_data->total_trigger_count++;
 
-    hall_data->hall_timestamps_index = (hall_data->hall_timestamps_index + 1) % 64;
+    hall_data->hall_timestamps_index = (hall_data->hall_timestamps_index + 1) % HALL_BUFFER_SIZE;
 
     hall_data->hall_timestamps[hall_data->hall_timestamps_index] = edgetimestamp;
 
@@ -96,12 +96,12 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "Create PID control block");
     pid_ctrl_parameter_t Motor_1_pid_runtime_param = {
-        .kp = 0.1,
-        .ki = 0.05,
+        .kp = 0.13,
+        .ki = 0.025,
         .kd = 0.0,
-        .cal_type = PID_CAL_TYPE_POSITIONAL,
-        .max_output   = MAX_SPEED/2,
-        .min_output   = MIN_SPEED/2,
+        .cal_type = PID_CAL_TYPE_INCREMENTAL,
+        .max_output   = MAX_SPEED,
+        .min_output   = 0,
         .max_integral = 100000,
         .min_integral = -100000,
     };
@@ -267,11 +267,11 @@ void app_main(void)
 
     int loopcount = 0;
 
-    int speed_pause = 0;
+    //int speed_pause = 0;
 
     uint64_t current_gptimer_timestamp = 0;
 
-    float step = 1; // RPM step for testing
+    //float step = 1; // RPM step for testing
 
     motor_1_data.target_rpm = 5000;
 
@@ -299,23 +299,33 @@ void app_main(void)
         hall_1_data.hall_timestamps_last_index = Hall_1_local_copy.hall_timestamps_index;
 
         
-        //now calculate RPM using updated data
 
 
-        motor_1_data.rpm = calculate_rpm(hall_1_data,motor_1_data.rpm);
+        //float smoothing_factor = 0.9f - (motor_1_data.target_rpm * 0.85f / 2000.0f);
+
+        // Clamp between 0.05 and 0.9
+        //if (smoothing_factor < 0.05f) smoothing_factor = 0.05f;
+        //if (smoothing_factor > 0.9f) smoothing_factor = 0.9f;
+
+        //float measured_rpm = calculate_rpm(hall_1_data, motor_1_data.rpm);
+
+        motor_1_data.rpm = calculate_rpm(hall_1_data, &motor_1_data); //(1.0f - smoothing_factor) * motor_1_data.rpm + smoothing_factor * measured_rpm;
 
 
+
+        /*
         if (motor_1_data.new_speed < 0)
         {
             motor_1_data.rpm = -motor_1_data.rpm; 
         }
+        */
 
         motor_1_data.error = motor_1_data.target_rpm - motor_1_data.rpm;
 
         pid_compute(Motor_1_pid_ctrl, motor_1_data.error, &motor_1_data.new_speed);
 
-        
-        
+        // motor_1_data.new_speed = 200; // for testing
+
 
         ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(motor_1_data.new_speed)));
 
@@ -346,7 +356,7 @@ void app_main(void)
             }
         */
         
-        printf("/*%f,%f,%f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed);
+        printf("/*%.1f,%.1f,%.1f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed);
 
         
         if (loopcount % 200== 0) { 
