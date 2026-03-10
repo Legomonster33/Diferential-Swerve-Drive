@@ -1,20 +1,15 @@
 #include "calculate_rpm.h"
 #include "esp_log.h"
 #include "math.h"
+#include <stdio.h>
 
 static const char *TAG = "calculate_rpm:";
 
 float calculate_rpm(hall_data_t hall_data, motor_data_t *motor_data) {
-    float rpm = 0.0;
+    float rpm;
 
 
-    uint64_t dt_since_last_pulse = 0;
-
-    if(hall_data.gptimer_last_update_timestamp > hall_data.gptimer_last_isr_timestamp){
-        dt_since_last_pulse = hall_data.gptimer_last_update_timestamp - hall_data.gptimer_last_isr_timestamp;
-    }
-    
-    if (dt_since_last_pulse > MOTOR_STALL_TICKS) {
+    if (hall_data.ticks_since_last_trigger > MOTOR_STALL_TICKS) {
         rpm = 0.0;
         //ESP_LOGI(TAG, "0 rpm stall detected dt %llu, hall_data.gptimer_last_update_timestamp: %llu, hall_data.gptimer_last_isr_timestamp: %llu", dt_since_last_pulse, hall_data.gptimer_last_update_timestamp, hall_data.gptimer_last_isr_timestamp);
         return rpm;
@@ -28,8 +23,10 @@ float calculate_rpm(hall_data_t hall_data, motor_data_t *motor_data) {
     if (pulses_to_average < 1)
     pulses_to_average = 1;
 
-    if (pulses_to_average > 64)
-    pulses_to_average = 64;
+    if (pulses_to_average > 128)
+    pulses_to_average = 128;
+
+    //pulses_to_average = 1;
 
     uint32_t current_index  = hall_data.hall_timestamps_index;
     
@@ -41,7 +38,7 @@ float calculate_rpm(hall_data_t hall_data, motor_data_t *motor_data) {
 
     uint64_t total_dt = (newer > older) ? (newer - older) : ((UINT32_MAX - older) + newer);
 
-    uint64_t dt = total_dt / pulses_to_average;
+    float dt = total_dt / pulses_to_average;
 
                 
             
@@ -49,16 +46,15 @@ float calculate_rpm(hall_data_t hall_data, motor_data_t *motor_data) {
     if (dt < MIN_VALID_DT) {
                 //ESP_LOGI(TAG, "dt is 0, returning last rpm %f", last_rpm);
                 return motor_data->rpm; // avoid division by zero, return last known rpm
-            }
-            rpm =((60ULL * TIMER_FREQ_HZ)/(dt * PULSES_PER_REV));
-
-
+    }
     
+    
+    rpm =((60ULL * TIMER_FREQ_HZ)/(dt * PULSES_PER_REV));
+
     if (rpm != rpm || rpm > 11000 || rpm < -11000) {
         ESP_LOGI(TAG, "strange rpm %f", rpm);
         ESP_LOGI(TAG, "hall_data.hall_timestamps_index: %u", hall_data.hall_timestamps_index);
-        ESP_LOGI(TAG, "hall_data.gptimer_last_update_timestamp: %llu", hall_data.gptimer_last_update_timestamp);
-        ESP_LOGI(TAG, "hall_data.gptimer_last_isr_timestamp: %llu", hall_data.gptimer_last_isr_timestamp);
+        ESP_LOGI(TAG, "hall_data.ticks_since_last_trigger: %u", hall_data.ticks_since_last_trigger);
         ESP_LOGI(TAG, "hall_data.total_trigger_count: %u", hall_data.total_trigger_count);
         ESP_LOGI(TAG, "hall_data.last_total_trigger_count: %u", hall_data.last_total_trigger_count);
         ESP_LOGI(TAG, "newer index %u" , newer_index);
@@ -70,5 +66,7 @@ float calculate_rpm(hall_data_t hall_data, motor_data_t *motor_data) {
         }
     }
     
+    //printf("/*%.1f,%.1f,%lu*/\r\n", rpm, dt, pulses_to_average);
+
     return rpm;
 }

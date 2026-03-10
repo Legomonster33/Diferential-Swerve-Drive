@@ -4,7 +4,7 @@
 
 static const char *TAG = "map_speed_to_pulsewidth:";
 
-uint32_t map_speed_to_pulsewidth(int speed)
+uint32_t map_speed_to_pulsewidth(float speed)
 {
     uint32_t pulsewidth = CENTER_PULSE;
     

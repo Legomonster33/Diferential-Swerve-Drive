@@ -12,6 +12,6 @@
 #define MIN_SPEED        -1000
 #define MAX_SPEED        1000
 
-uint32_t map_speed_to_pulsewidth(int speed);
+uint32_t map_speed_to_pulsewidth(float speed);
 
 #endif

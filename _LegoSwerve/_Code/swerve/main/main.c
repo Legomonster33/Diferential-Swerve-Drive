@@ -15,6 +15,10 @@
 #include "pid_ctrl.h"
 #include "sdkconfig.h"
 
+#include "esp_system.h"
+#include "esp_intr_alloc.h"
+#include "esp32/rom/ets_sys.h"
+
 
 #include "hall_data.h"
 #include "motor_data.h"
@@ -34,6 +38,9 @@ static const char *TAG = "Swerve:";
 #define TIMEBASE_RESOLUTION_HZ 1000000  // 1MHz, 1us per tick
 #define SERVO_TIMEBASE_PERIOD        5000    // 5000 ticks, 5ms
 
+#define MAX_RPM 10000.0f
+#define MIN_RPM -10000.0f
+
 
 
 bool main_isr_flag = false;
@@ -47,7 +54,7 @@ static hall_data_t hall_1_data = {0};
 
 static motor_data_t motor_1_data = {0};
 
-
+static portMUX_TYPE my_mux = portMUX_INITIALIZER_UNLOCKED;
 
 
 
@@ -62,28 +69,33 @@ static bool IRAM_ATTR timer_isr(gptimer_handle_t timer,const gptimer_alarm_event
 
 
 //ISR runs when hall sensor.
-static bool hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcpwm_capture_event_data_t *edata, void *user_data)
+static bool IRAM_ATTR hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcpwm_capture_event_data_t *edata, void *user_data)
 {
 
     uint32_t edgetimestamp = edata->cap_value;
-    uint64_t current_gptimer_timestamp;
 
     hall_data_t *hall_data = (hall_data_t *)user_data;
 
+    // get last timestamp
+    uint32_t last_index = hall_data->hall_timestamps_index;
+    uint32_t last_timestamp = hall_data->hall_timestamps[last_index];
 
+    uint32_t dt_since_last_pulse = (edgetimestamp > last_timestamp ) ? (edgetimestamp - last_timestamp) : (UINT32_MAX - last_timestamp) + edgetimestamp;
+
+    // only process if time since last pulse is valid
+    if (dt_since_last_pulse < MIN_VALID_DT) {
+        return false;  // ignore this edge
+    }
+
+    // update hall data
     hall_data->total_trigger_count++;
 
-    hall_data->hall_timestamps_index = (hall_data->hall_timestamps_index + 1) % HALL_BUFFER_SIZE;
+    hall_data->hall_timestamps_index =
+        (hall_data->hall_timestamps_index + 1) % HALL_BUFFER_SIZE;
 
     hall_data->hall_timestamps[hall_data->hall_timestamps_index] = edgetimestamp;
 
-    
-
-
-    gptimer_get_raw_count(gptimer_timestamping, &current_gptimer_timestamp);
-
-    hall_data->gptimer_last_isr_timestamp = current_gptimer_timestamp;
-
+    ets_printf("/*%lu*/\n", dt_since_last_pulse);
 
     return false;
             
@@ -267,13 +279,13 @@ void app_main(void)
 
     int loopcount = 0;
 
-    int speed_pause = 0;
+    //int speed_pause = 0;
 
-    uint64_t current_gptimer_timestamp = 0;
+    //uint64_t current_gptimer_timestamp = 0;
 
-    float step = 1; // RPM step for testing
+    //float step = 1; // RPM step for testing
 
-    motor_1_data.target_rpm = 0;
+    motor_1_data.target_rpm = 5000;
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise wdtd triggers
@@ -286,17 +298,20 @@ void app_main(void)
         if (main_isr_flag){
         
 
+        taskENTER_CRITICAL(&my_mux);
         hall_data_t Hall_1_local_copy = hall_1_data;
+        taskEXIT_CRITICAL(&my_mux);
 
-        // capture current timestamp at update
-        gptimer_get_raw_count(gptimer_timestamping, &current_gptimer_timestamp);
 
-        //save timestamp / last counts
-        hall_1_data.gptimer_last_update_timestamp = current_gptimer_timestamp;
+
         hall_1_data.last_total_trigger_count = Hall_1_local_copy.total_trigger_count;
         hall_1_data.hall_timestamps_last_index = Hall_1_local_copy.hall_timestamps_index;
 
-        
+        if (Hall_1_local_copy.total_trigger_count == Hall_1_local_copy.last_total_trigger_count) {
+            hall_1_data.ticks_since_last_trigger += 1;
+        } else {
+            hall_1_data.ticks_since_last_trigger = 0;
+        }
 
 
         //float smoothing_factor = 0.9f - (motor_1_data.target_rpm * 0.85f / 2000.0f);
@@ -307,7 +322,8 @@ void app_main(void)
 
         //float measured_rpm = calculate_rpm(hall_1_data, motor_1_data.rpm);
 
-        motor_1_data.rpm = calculate_rpm(hall_1_data, &motor_1_data); //(1.0f - smoothing_factor) * motor_1_data.rpm + smoothing_factor * measured_rpm;
+
+        motor_1_data.rpm = calculate_rpm(Hall_1_local_copy, &motor_1_data); //(1.0f - smoothing_factor) * motor_1_data.rpm + smoothing_factor * measured_rpm;
 
 
 
@@ -322,19 +338,17 @@ void app_main(void)
 
         pid_compute(Motor_1_pid_ctrl, motor_1_data.error, &motor_1_data.new_speed);
 
-        // motor_1_data.new_speed = 200; // for testing
+        motor_1_data.new_speed = 500; // for testing
 
 
         ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(motor_1_data.new_speed)));
-
-
 
         
 
         
         // Adjust speed
 
-        
+        /*
         if (speed_pause > 0) {
                 speed_pause--;
         } 
@@ -343,9 +357,9 @@ void app_main(void)
         else {
             motor_1_data.target_rpm += step;
 
-            if (motor_1_data.target_rpm >= 5000 || motor_1_data.target_rpm <= -5000) {
+            if (motor_1_data.target_rpm >= MAX_RPM || motor_1_data.target_rpm <= MIN_RPM) {
                     step *= -1;
-                    motor_1_data.target_rpm = (motor_1_data.target_rpm >= 5000) ? 5000 : -5000;
+                    motor_1_data.target_rpm = (motor_1_data.target_rpm >= MAX_RPM) ? MAX_RPM : MIN_RPM;
                     speed_pause = 2000;
                 }
             else if (motor_1_data.target_rpm == 0) {
@@ -353,8 +367,9 @@ void app_main(void)
                 }
             }
         
+        */
         
-        printf("/*%.1f,%.1f,%.1f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed);
+        //printf("/*%.1f,%.1f,%.1f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed);
 
         
         if (loopcount % 200== 0) { 

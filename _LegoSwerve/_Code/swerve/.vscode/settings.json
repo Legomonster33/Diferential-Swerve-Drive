@@ -12,7 +12,7 @@
   "clangd.arguments": [
     "--background-index",
     "--query-driver=**",
-    "--compile-commands-dir=c:\\_LegoSwerve\\_Code\\mcpwm_servo_control\\build"
+    "--compile-commands-dir=d:\\Users\\Sigle\\Documents\\GitHub\\Diffy-Swerve-Arduino\\_LegoSwerve\\_Code\\swerve\\build"
   ],
   "idf.flashType": "UART"
 }

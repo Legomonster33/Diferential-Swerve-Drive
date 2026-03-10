@@ -12,8 +12,7 @@ typedef struct {
     uint32_t hall_timestamps_last_index;
     uint32_t total_trigger_count;
     uint32_t last_total_trigger_count;
-    uint64_t gptimer_last_isr_timestamp;
-    uint64_t gptimer_last_update_timestamp;
+    uint32_t ticks_since_last_trigger;
     uint32_t hall_timestamps[HALL_BUFFER_SIZE];
 } hall_data_t;
 
