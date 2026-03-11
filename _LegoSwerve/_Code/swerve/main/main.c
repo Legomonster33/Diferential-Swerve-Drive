@@ -269,6 +269,7 @@ void app_main(void)
     //float step = 5; // RPM step for testing
 
     motor_1_data.target_rpm = 1000;
+    motor_1_data.rpm = 0;
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise wdtd triggers
@@ -312,11 +313,11 @@ void app_main(void)
 
         
         // negate rpm if speed output is negative.
-        /*
+        
         if (motor_1_data.new_speed < 0) {
             motor_1_data.rpm = -motor_1_data.rpm;
         }
-        */
+        
 
         motor_1_data.error = motor_1_data.target_rpm - motor_1_data.rpm;
 
