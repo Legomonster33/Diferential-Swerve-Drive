@@ -24,8 +24,8 @@
 #include "motor_data.h"
 
 #include "calculate_rpm.h"
-
 #include "map_speed_to_pulsewidth.h"
+#include "map_target_rpm_to_speed.h"
 
 static const char *TAG = "Swerve:";
 
@@ -38,8 +38,7 @@ static const char *TAG = "Swerve:";
 #define TIMEBASE_RESOLUTION_HZ 1000000  // 1MHz, 1us per tick
 #define SERVO_TIMEBASE_PERIOD        5000    // 5000 ticks, 5ms
 
-#define MAX_RPM 10000.0f
-#define MIN_RPM -10000.0f
+
 
 
 
@@ -91,12 +90,12 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "Create PID control block");
     pid_ctrl_parameter_t Motor_1_pid_runtime_param = {
-        .kp = 0.3,
-        .ki = 0.015,
+        .kp = 0.2,
+        .ki = 0.005,
         .kd = 0.0,
-        .cal_type = PID_CAL_TYPE_INCREMENTAL,
-        .max_output   = MAX_SPEED,
-        .min_output   = MIN_SPEED,
+        .cal_type = PID_CAL_TYPE_POSITIONAL,
+        .max_output   = MAX_SPEED/5,
+        .min_output   = MIN_SPEED/5,
         .max_integral = 100000,
         .min_integral = -100000,
     };
@@ -262,13 +261,13 @@ void app_main(void)
 
     int loopcount = 0;
 
-    //int speed_pause = 0;
+    int speed_pause = 0;
 
     //uint64_t current_gptimer_timestamp = 0;
 
-    //float step = 5; // RPM step for testing
+    float step = 5; // RPM step for testing
 
-    motor_1_data.target_rpm = 1000;
+    motor_1_data.target_rpm = 0;
     motor_1_data.rpm = 0;
 
     while (1) {
@@ -300,8 +299,7 @@ void app_main(void)
 
         float smoothing_factor = 0.9f - (motor_1_data.target_rpm * 0.85f / 2000.0f);
 
-        // Clamp between 0.05 and 0.9
-        if (smoothing_factor < 0.025f) smoothing_factor = 0.025f;
+        if (smoothing_factor < 0.1f) smoothing_factor = 0.1f;
         if (smoothing_factor > 0.9f) smoothing_factor = 0.9f;
 
         float measured_rpm = calculate_rpm(hall_1_data, &motor_1_data);
@@ -309,21 +307,29 @@ void app_main(void)
 
         motor_1_data.rpm = (1.0f - smoothing_factor) * motor_1_data.rpm + smoothing_factor * measured_rpm;
 
-
-
         
-        // negate rpm if speed output is negative.
         
-        if (motor_1_data.new_speed < 0) {
+        if (motor_1_data.new_speed < 0) {   // negate rpm if speed output is negative.
             motor_1_data.rpm = -motor_1_data.rpm;
         }
         
 
-        motor_1_data.error = motor_1_data.target_rpm - motor_1_data.rpm;
 
-        pid_compute(Motor_1_pid_ctrl, motor_1_data.error, &motor_1_data.new_speed);
+
+
+        motor_1_data.error = (motor_1_data.target_rpm - motor_1_data.rpm);
+
+        motor_1_data.feedforward = map_target_rpm_to_speed(motor_1_data.target_rpm);
+
+        pid_compute(Motor_1_pid_ctrl, motor_1_data.error, &motor_1_data.pid_output);
+
+        
+
+
+        motor_1_data.new_speed = motor_1_data.feedforward + motor_1_data.pid_output;
 
         //motor_1_data.new_speed = 500; // for testing
+
 
 
         ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(motor_1_data.new_speed)));
@@ -333,7 +339,7 @@ void app_main(void)
         
         // Adjust speed
 
-        /*
+        
         if (speed_pause > 0) {
                 speed_pause--;
         } 
@@ -344,20 +350,18 @@ void app_main(void)
 
             if (motor_1_data.target_rpm >= MAX_RPM || motor_1_data.target_rpm <= MIN_RPM) {
                     step *= -1;
-                    step *= 2;
-                    if (step > 50) {step = 50;}
                     motor_1_data.target_rpm = (motor_1_data.target_rpm >= MAX_RPM) ? MAX_RPM : MIN_RPM;
-                    speed_pause = 1000;
+                    speed_pause = 400;
                 }
             else if (motor_1_data.target_rpm == 0) {
-                    speed_pause = 1000;
+                    speed_pause = 400;
                 }
             }
-        */
         
         
         
-        printf("/*%.1f,%.1f,%.1f,%.1f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed, motor_1_data.error);
+        
+        printf("/*%.1f, %.1f, %.1f, %.1f, %.1f, %.1f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed, motor_1_data.pid_output,motor_1_data.feedforward,motor_1_data.error);
 
         
         if (loopcount % 200== 0) { 

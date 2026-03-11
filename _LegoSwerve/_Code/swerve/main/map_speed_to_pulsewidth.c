@@ -12,8 +12,8 @@ uint32_t map_speed_to_pulsewidth(float speed)
         pulsewidth = CENTER_PULSE;
     } 
     
-    if (speed < MIN_SPEED || speed > MAX_SPEED) {
-        ESP_LOGW(TAG, "Speed should be between %d and %d", MIN_SPEED, MAX_SPEED);
+    if (speed < MIN_SPEED*1.5 || speed > MAX_SPEED*1.5) {
+        ESP_LOGW(TAG, "Speed should be between %d and %d", MIN_SPEED*1.5, MAX_SPEED*1.5);
         pulsewidth = CENTER_PULSE;
     }
 

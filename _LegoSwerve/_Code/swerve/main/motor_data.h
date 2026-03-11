@@ -9,6 +9,8 @@ typedef struct {
     float target_rpm;
     float error;
     float new_speed;
+    float feedforward;
+    float pid_output;
 } motor_data_t;
 
 #endif
