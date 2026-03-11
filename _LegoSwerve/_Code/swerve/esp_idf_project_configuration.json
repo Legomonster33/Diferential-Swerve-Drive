@@ -10,7 +10,7 @@
     "env": {},
     "idfTarget": "",
     "flashBaudRate": "",
-    "monitorBaudRate": "115200",
+    "monitorBaudRate": "",
     "openOCD": {
       "debugLevel": -1,
       "configs": [],

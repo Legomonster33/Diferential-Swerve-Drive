@@ -1,92 +1,656 @@
-***ERROR*** A stack overflow in task main has been detected.
 
-
-Backtrace: 0x40084f91:0x3ffb3aa0 0x40084f59:0x3ffb3ac0 0x40085d0a:0x3ffb3ae0 0x40086d7f:0x3ffb3b60 0x40085e14:0x3ffb3b80 0x40085dc6:0x400dcc58 |<-CORRUPTED
---- 0x40084f91: panic_abort at C:/esp/v5.5.3/esp-idf/components/esp_system/panic.c:477
---- 0x40084f59: esp_system_abort at C:/esp/v5.5.3/esp-idf/components/esp_system/port/esp_system_chip.c:87
---- 0x40085d0a: vApplicationStackOverflowHook at C:/esp/v5.5.3/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c:563
---- 0x40086d7f: vTaskSwitchContext at C:/esp/v5.5.3/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3698
---- 0x40085e14: _frxt_dispatch at C:/esp/v5.5.3/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/portasm.S:451
---- 0x40085dc6: _frxt_int_exit at C:/esp/v5.5.3/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/portasm.S:246
---- 0x400dcc58: pid_calc_incremental at D:/Users/Sigle/Documents/GitHub/Diffy-Swerve-Arduino/_LegoSwerve/_Code/swerve/managed_components/espressif__pid_ctrl/src/pid_ctrl.c:72
-
-
-
-
-ELF file SHA256: c4aa87fb6
-
-Rebooting...
-ets Jul 29 2019 12:21:46
-
-rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
-configsip: 0, SPIWP:0xee
-clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
-mode:DIO, clock div:2
-load:0x3fff0030,len:6280
-load:0x40078000,len:15864
-load:0x40080400,len:3920
---- 0x40080400: _invalid_pc_placeholder at C:/esp/v5.5.3/esp-idf/components/xtensa/xtensa_vectors.S:2235
-entry 0x40080644
-I (27) boot: ESP-IDF v5.5.3 2nd stage bootloader
-I (27) boot: compile time Mar  5 2026 22:36:32
-I (27) boot: Multicore bootloader
-I (29) boot: chip revision: v3.1
-I (31) boot.esp32: SPI Speed      : 40MHz
-I (35) boot.esp32: SPI Mode       : DIO
-I (39) boot.esp32: SPI Flash Size : 2MB
-I (42) boot: Enabling RNG early entropy source...
-I (47) boot: Partition Table:
-I (49) boot: ## Label            Usage          Type ST Offset   Length
-I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
-I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
-I (69) boot:  2 factory          factory app      00 00 00010000 00100000
-I (75) boot: End of partition table
-I (79) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=09528h ( 38184) map
-I (99) esp_image: segment 1: paddr=00019550 vaddr=3ffb0000 size=02644h (  9796) load
-I (103) esp_image: segment 2: paddr=0001bb9c vaddr=40080000 size=0447ch ( 17532) load
-I (110) esp_image: segment 3: paddr=00020020 vaddr=400d0020 size=109e4h ( 68068) map
-I (134) esp_image: segment 4: paddr=00030a0c vaddr=4008447c size=087dch ( 34780) load
-I (148) esp_image: segment 5: paddr=000391f0 vaddr=50000000 size=00020h (    32) load
-I (154) boot: Loaded app from partition at offset 0x10000
-I (154) boot: Disabling RNG early entropy source...
-I (166) cpu_start: Multicore app
-I (174) cpu_start: GPIO 3 and 1 are used as console UART I/O pins
-I (174) cpu_start: Pro cpu start user code
-I (174) cpu_start: cpu freq: 160000000 Hz
-I (176) app_init: Application information:
-I (180) app_init: Project name:     SWERVE
-I (184) app_init: App version:      6535f28-dirty
-I (188) app_init: Compile time:     Mar  8 2026 15:23:07
-I (193) app_init: ELF file SHA256:  c4aa87fb6...
-I (198) app_init: ESP-IDF:          v5.5.3
-I (201) efuse_init: Min chip rev:     v0.0
-I (205) efuse_init: Max chip rev:     v3.99
-I (209) efuse_init: Chip rev:         v3.1
-I (213) heap_init: Initializing. RAM available for dynamic allocation:
-I (219) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
-I (224) heap_init: At 3FFB3318 len 0002CCE8 (179 KiB): DRAM
-I (230) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
-I (235) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
-I (241) heap_init: At 4008CC58 len 000133A8 (76 KiB): IRAM
-W (247) spi_flash: Detected boya flash chip but using generic driver. For optimal functionality, enable `SPI_FLASH_SUPPORT_BOYA_CHIP` in menuconfig
-I (259) spi_flash: detected chip: generic
-I (262) spi_flash: flash io: dio
-W (265) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.
-I (278) main_task: Started on CPU0
-I (288) main_task: Calling app_main()
-I (288) Swerve:: Create PID control block
-I (288) Swerve:: Create gptimer for 200hz
-I (288) Swerve:: Register ISR
-I (288) Swerve:: Enable timer
-I (288) Swerve:: Create gptimer for timestamping
-I (298) Swerve:: Enable timer
-I (298) Swerve:: Install capture timer
-I (298) Swerve:: Install capture channel
-I (308) Swerve:: Register capture callback
-I (308) Swerve:: Enable capture channel
-I (318) Swerve:: Enable and start capture timer
-I (318) Swerve:: Create timer and operator
-I (318) Swerve:: Connect timer and operator
-I (328) Swerve:: Create MOTOR_1_PWM_DUTY and generator from the operator
-I (328) Swerve:: Set generator action on timer and compare event
-I (338) Swerve:: Enable and start timer
+/*-nan,470.0,1000.0,-nan*/
+/*-nan,460.0,1000.0,-nan*/
+/*-nan,450.0,1000.0,-nan*/
+/*-nan,440.0,1000.0,-nan*/
+/*-nan,430.0,1000.0,-nan*/
+/*-nan,420.0,1000.0,-nan*/
+/*-nan,410.0,1000.0,-nan*/
+/*-nan,400.0,1000.0,-nan*/
+/*-nan,390.0,1000.0,-nan*/
+/*-nan,380.0,1000.0,-nan*/
+/*-nan,370.0,1000.0,-nan*/
+I (58578) calculate_rpm:: strange rpm 15184.731445
+I (58578) calculate_rpm:: hall_data.hall_timestamps_index: 69
+I (58578) calculate_rpm:: hall_data.ticks_since_last_trigger: 0
+I (58578) calculate_rpm:: hall_data.total_trigger_count: 60997
+I (58588) calculate_rpm:: hall_data.last_total_trigger_count: 60997
+I (58588) calculate_rpm:: hall_timestamps[0]: 360976920
+I (58598) calculate_rpm:: hall_timestamps[1]: 361043465
+I (58598) calculate_rpm:: hall_timestamps[2]: 361113016
+I (58608) calculate_rpm:: hall_timestamps[3]: 361183048
+I (58608) calculate_rpm:: hall_timestamps[4]: 361214774
+I (58618) calculate_rpm:: hall_timestamps[5]: 361253207
+I (58618) calculate_rpm:: hall_timestamps[6]: 361320208
+I (58628) calculate_rpm:: hall_timestamps[7]: 361386091
+I (58628) calculate_rpm:: hall_timestamps[8]: 361452637
+I (58638) calculate_rpm:: hall_timestamps[9]: 361522228
+I (58638) calculate_rpm:: hall_timestamps[10]: 361592186
+I (58648) calculate_rpm:: hall_timestamps[11]: 361662339
+I (58648) calculate_rpm:: hall_timestamps[12]: 361729363
+I (58658) calculate_rpm:: hall_timestamps[13]: 361795223
+I (58658) calculate_rpm:: hall_timestamps[14]: 361861806
+I (58668) calculate_rpm:: hall_timestamps[15]: 361931360
+I (58668) calculate_rpm:: hall_timestamps[16]: 362001348
+I (58678) calculate_rpm:: hall_timestamps[17]: 362071544
+I (58678) calculate_rpm:: hall_timestamps[18]: 362138562
+I (58688) calculate_rpm:: hall_timestamps[19]: 362204445
+I (58688) calculate_rpm:: hall_timestamps[20]: 362271006
+I (58698) calculate_rpm:: hall_timestamps[21]: 362340556
+I (58698) calculate_rpm:: hall_timestamps[22]: 362410533
+I (58708) calculate_rpm:: hall_timestamps[23]: 362480729
+I (58708) calculate_rpm:: hall_timestamps[24]: 362547739
+I (58718) calculate_rpm:: hall_timestamps[25]: 362613604
+I (58718) calculate_rpm:: hall_timestamps[26]: 362680164
+I (58728) calculate_rpm:: hall_timestamps[27]: 362749734
+I (58728) calculate_rpm:: hall_timestamps[28]: 362819697
+I (58738) calculate_rpm:: hall_timestamps[29]: 362851434
+I (58738) calculate_rpm:: hall_timestamps[30]: 362889852
+I (58748) calculate_rpm:: hall_timestamps[31]: 362956877
+I (58748) calculate_rpm:: hall_timestamps[32]: 363022728
+I (58758) calculate_rpm:: hall_timestamps[33]: 363089305
+I (58758) calculate_rpm:: hall_timestamps[34]: 363158863
+I (58768) calculate_rpm:: hall_timestamps[35]: 363228796
+I (58768) calculate_rpm:: hall_timestamps[36]: 363298962
+I (58778) calculate_rpm:: hall_timestamps[37]: 363365969
+I (58778) calculate_rpm:: hall_timestamps[38]: 363431824
+I (58788) calculate_rpm:: hall_timestamps[39]: 363498406
+I (58788) calculate_rpm:: hall_timestamps[40]: 363567909
+I (58798) calculate_rpm:: hall_timestamps[41]: 363637850
+I (58798) calculate_rpm:: hall_timestamps[42]: 363708052
+I (58808) calculate_rpm:: hall_timestamps[43]: 363775021
+I (58808) calculate_rpm:: hall_timestamps[44]: 363840879
+I (58818) calculate_rpm:: hall_timestamps[45]: 363907417
+I (58818) calculate_rpm:: hall_timestamps[46]: 363976969
+I (58828) calculate_rpm:: hall_timestamps[47]: 364046925
+I (58828) calculate_rpm:: hall_timestamps[48]: 364117069
+I (58838) calculate_rpm:: hall_timestamps[49]: 364184054
+I (58838) calculate_rpm:: hall_timestamps[50]: 364249879
+I (58848) calculate_rpm:: hall_timestamps[51]: 364316471
+I (58848) calculate_rpm:: hall_timestamps[52]: 364385980
+I (58858) calculate_rpm:: hall_timestamps[53]: 364455923
+I (58858) calculate_rpm:: hall_timestamps[54]: 364526097
+I (58868) calculate_rpm:: hall_timestamps[55]: 364593079
+I (58868) calculate_rpm:: hall_timestamps[56]: 364658924
+I (58878) calculate_rpm:: hall_timestamps[57]: 364725496
+I (58878) calculate_rpm:: hall_timestamps[58]: 364795003
+I (58888) calculate_rpm:: hall_timestamps[59]: 364864937
+I (58888) calculate_rpm:: hall_timestamps[60]: 364935081
+I (58898) calculate_rpm:: hall_timestamps[61]: 365002083
+I (58898) calculate_rpm:: hall_timestamps[62]: 365067930
+I (58908) calculate_rpm:: hall_timestamps[63]: 365134440
+I (58908) calculate_rpm:: hall_timestamps[64]: 365203995
+I (58918) calculate_rpm:: hall_timestamps[65]: 365273944
+I (58918) calculate_rpm:: hall_timestamps[66]: 365305736
+I (58928) calculate_rpm:: hall_timestamps[67]: 365344098
+I (58928) calculate_rpm:: hall_timestamps[68]: 365411105
+I (58938) calculate_rpm:: hall_timestamps[69]: 365476947
+I (58938) calculate_rpm:: hall_timestamps[70]: 348498818
+I (58948) calculate_rpm:: hall_timestamps[71]: 348568991
+I (58948) calculate_rpm:: hall_timestamps[72]: 348635999
+I (58958) calculate_rpm:: hall_timestamps[73]: 348701852
+I (58958) calculate_rpm:: hall_timestamps[74]: 348768409
+I (58968) calculate_rpm:: hall_timestamps[75]: 348837960
+I (58968) calculate_rpm:: hall_timestamps[76]: 348907928
+I (58978) calculate_rpm:: hall_timestamps[77]: 348978106
+I (58978) calculate_rpm:: hall_timestamps[78]: 349045128
+I (58988) calculate_rpm:: hall_timestamps[79]: 349110989
+I (58988) calculate_rpm:: hall_timestamps[80]: 349177544
+I (58998) calculate_rpm:: hall_timestamps[81]: 349247106
+I (58998) calculate_rpm:: hall_timestamps[82]: 349317080
+I (59008) calculate_rpm:: hall_timestamps[83]: 349387291
+I (59008) calculate_rpm:: hall_timestamps[84]: 349454265
+I (59018) calculate_rpm:: hall_timestamps[85]: 349520161
+I (59018) calculate_rpm:: hall_timestamps[86]: 349586733
+I (59028) calculate_rpm:: hall_timestamps[87]: 349656275
+I (59028) calculate_rpm:: hall_timestamps[88]: 349726231
+I (59038) calculate_rpm:: hall_timestamps[89]: 349796443
+I (59038) calculate_rpm:: hall_timestamps[90]: 349863418
+I (59048) calculate_rpm:: hall_timestamps[91]: 349929303
+I (59048) calculate_rpm:: hall_timestamps[92]: 349995907
+I (59058) calculate_rpm:: hall_timestamps[93]: 350065445
+I (59058) calculate_rpm:: hall_timestamps[94]: 350135461
+I (59068) calculate_rpm:: hall_timestamps[95]: 350205672
+I (59068) calculate_rpm:: hall_timestamps[96]: 350272669
+I (59078) calculate_rpm:: hall_timestamps[97]: 350338560
+I (59078) calculate_rpm:: hall_timestamps[98]: 350405171
+I (59088) calculate_rpm:: hall_timestamps[99]: 350474680
+I (59088) calculate_rpm:: hall_timestamps[100]: 350544649
+I (59098) calculate_rpm:: hall_timestamps[101]: 350576530
+I (59098) calculate_rpm:: hall_timestamps[102]: 350614897
+I (59108) calculate_rpm:: hall_timestamps[103]: 350681837
+I (59108) calculate_rpm:: hall_timestamps[104]: 350747784
+I (59118) calculate_rpm:: hall_timestamps[105]: 350814312
+I (59118) calculate_rpm:: hall_timestamps[106]: 350883904
+I (59128) calculate_rpm:: hall_timestamps[107]: 350953877
+I (59128) calculate_rpm:: hall_timestamps[108]: 351024079
+I (59138) calculate_rpm:: hall_timestamps[109]: 351091091
+I (59138) calculate_rpm:: hall_timestamps[110]: 351156964
+I (59148) calculate_rpm:: hall_timestamps[111]: 351223555
+I (59158) calculate_rpm:: hall_timestamps[112]: 351293094
+I (59158) calculate_rpm:: hall_timestamps[113]: 351363079
+I (59168) calculate_rpm:: hall_timestamps[114]: 351433290
+I (59168) calculate_rpm:: hall_timestamps[115]: 351500287
+I (59178) calculate_rpm:: hall_timestamps[116]: 351566143
+I (59178) calculate_rpm:: hall_timestamps[117]: 351632739
+I (59188) calculate_rpm:: hall_timestamps[118]: 351702319
+I (59188) calculate_rpm:: hall_timestamps[119]: 351772309
+I (59198) calculate_rpm:: hall_timestamps[120]: 351842473
+I (59198) calculate_rpm:: hall_timestamps[121]: 351909509
+I (59208) calculate_rpm:: hall_timestamps[122]: 351975381
+I (59208) calculate_rpm:: hall_timestamps[123]: 352041967
+I (59218) calculate_rpm:: hall_timestamps[124]: 352111476
+I (59218) calculate_rpm:: hall_timestamps[125]: 352181459
+I (59228) calculate_rpm:: hall_timestamps[126]: 352251673
+I (59228) calculate_rpm:: hall_timestamps[127]: 352318655
+I (59238) calculate_rpm:: hall_timestamps[128]: 352384551
+I (59238) calculate_rpm:: hall_timestamps[129]: 352451092
+I (59248) calculate_rpm:: hall_timestamps[130]: 352520661
+I (59248) calculate_rpm:: hall_timestamps[131]: 352590661
+I (59258) calculate_rpm:: hall_timestamps[132]: 352660852
+I (59258) calculate_rpm:: hall_timestamps[133]: 352727859
+I (59268) calculate_rpm:: hall_timestamps[134]: 352793728
+I (59268) calculate_rpm:: hall_timestamps[135]: 352860315
+I (59278) calculate_rpm:: hall_timestamps[136]: 352929821
+I (59278) calculate_rpm:: hall_timestamps[137]: 352999793
+I (59288) calculate_rpm:: hall_timestamps[138]: 353069995
+I (59288) calculate_rpm:: hall_timestamps[139]: 353136948
+I (59298) calculate_rpm:: hall_timestamps[140]: 353202845
+I (59298) calculate_rpm:: hall_timestamps[141]: 353269436
+I (59308) calculate_rpm:: hall_timestamps[142]: 353338977
+I (59308) calculate_rpm:: hall_timestamps[143]: 353408948
+I (59318) calculate_rpm:: hall_timestamps[144]: 353440732
+I (59318) calculate_rpm:: hall_timestamps[145]: 353479129
+I (59328) calculate_rpm:: hall_timestamps[146]: 353546138
+I (59328) calculate_rpm:: hall_timestamps[147]: 353612014
+I (59338) calculate_rpm:: hall_timestamps[148]: 353678593
+I (59338) calculate_rpm:: hall_timestamps[149]: 353748139
+I (59348) calculate_rpm:: hall_timestamps[150]: 353818101
+I (59348) calculate_rpm:: hall_timestamps[151]: 353888298
+I (59358) calculate_rpm:: hall_timestamps[152]: 353955304
+I (59368) calculate_rpm:: hall_timestamps[153]: 354021176
+I (59368) calculate_rpm:: hall_timestamps[154]: 354087784
+I (59378) calculate_rpm:: hall_timestamps[155]: 354157310
+I (59378) calculate_rpm:: hall_timestamps[156]: 354227311
+I (59388) calculate_rpm:: hall_timestamps[157]: 354297508
+I (59388) calculate_rpm:: hall_timestamps[158]: 354364488
+I (59398) calculate_rpm:: hall_timestamps[159]: 354430374
+I (59398) calculate_rpm:: hall_timestamps[160]: 354496974
+I (59408) calculate_rpm:: hall_timestamps[161]: 354566522
+I (59408) calculate_rpm:: hall_timestamps[162]: 354636494
+I (59418) calculate_rpm:: hall_timestamps[163]: 354706684
+I (59418) calculate_rpm:: hall_timestamps[164]: 354773640
+I (59428) calculate_rpm:: hall_timestamps[165]: 354839564
+I (59428) calculate_rpm:: hall_timestamps[166]: 354906127
+I (59438) calculate_rpm:: hall_timestamps[167]: 354975726
+I (59438) calculate_rpm:: hall_timestamps[168]: 355045699
+I (59448) calculate_rpm:: hall_timestamps[169]: 355115895
+I (59448) calculate_rpm:: hall_timestamps[170]: 355182911
+I (59458) calculate_rpm:: hall_timestamps[171]: 355248773
+I (59458) calculate_rpm:: hall_timestamps[172]: 355315346
+I (59468) calculate_rpm:: hall_timestamps[173]: 355384917
+I (59468) calculate_rpm:: hall_timestamps[174]: 355454890
+I (59478) calculate_rpm:: hall_timestamps[175]: 355525060
+I (59478) calculate_rpm:: hall_timestamps[176]: 355592085
+I (59488) calculate_rpm:: hall_timestamps[177]: 355657929
+I (59488) calculate_rpm:: hall_timestamps[178]: 355724553
+I (59498) calculate_rpm:: hall_timestamps[179]: 355794071
+I (59498) calculate_rpm:: hall_timestamps[180]: 355864075
+I (59508) calculate_rpm:: hall_timestamps[181]: 355934261
+I (59508) calculate_rpm:: hall_timestamps[182]: 356001266
+I (59518) calculate_rpm:: hall_timestamps[183]: 356067129
+I (59518) calculate_rpm:: hall_timestamps[184]: 356133718
+I (59528) calculate_rpm:: hall_timestamps[185]: 356203251
+I (59528) calculate_rpm:: hall_timestamps[186]: 356273216
+I (59538) calculate_rpm:: hall_timestamps[187]: 356343416
+I (59538) calculate_rpm:: hall_timestamps[188]: 356410407
+I (59548) calculate_rpm:: hall_timestamps[189]: 356476261
+I (59548) calculate_rpm:: hall_timestamps[190]: 356542858
+I (59558) calculate_rpm:: hall_timestamps[191]: 356612410
+I (59558) calculate_rpm:: hall_timestamps[192]: 356682404
+I (59568) calculate_rpm:: hall_timestamps[193]: 356752549
+I (59578) calculate_rpm:: hall_timestamps[194]: 356819596
+I (59578) calculate_rpm:: hall_timestamps[195]: 356885437
+I (59588) calculate_rpm:: hall_timestamps[196]: 356951987
+I (59588) calculate_rpm:: hall_timestamps[197]: 357021538
+I (59598) calculate_rpm:: hall_timestamps[198]: 357091468
+I (59598) calculate_rpm:: hall_timestamps[199]: 357161664
+I (59608) calculate_rpm:: hall_timestamps[200]: 357228695
+I (59608) calculate_rpm:: hall_timestamps[201]: 357294564
+I (59618) calculate_rpm:: hall_timestamps[202]: 357361129
+I (59618) calculate_rpm:: hall_timestamps[203]: 357430675
+I (59628) calculate_rpm:: hall_timestamps[204]: 357500663
+I (59628) calculate_rpm:: hall_timestamps[205]: 357570844
+I (59638) calculate_rpm:: hall_timestamps[206]: 357637846
+I (59638) calculate_rpm:: hall_timestamps[207]: 357703683
+I (59648) calculate_rpm:: hall_timestamps[208]: 357770291
+I (59648) calculate_rpm:: hall_timestamps[209]: 357839790
+I (59658) calculate_rpm:: hall_timestamps[210]: 357909789
+I (59658) calculate_rpm:: hall_timestamps[211]: 357979949
+I (59668) calculate_rpm:: hall_timestamps[212]: 358046965
+I (59668) calculate_rpm:: hall_timestamps[213]: 358112812
+I (59678) calculate_rpm:: hall_timestamps[214]: 358179394
+I (59678) calculate_rpm:: hall_timestamps[215]: 358248944
+I (59688) calculate_rpm:: hall_timestamps[216]: 358318925
+I (59688) calculate_rpm:: hall_timestamps[217]: 358389114
+I (59698) calculate_rpm:: hall_timestamps[218]: 358456105
+I (59698) calculate_rpm:: hall_timestamps[219]: 358521989
+I (59708) calculate_rpm:: hall_timestamps[220]: 358588552
+I (59708) calculate_rpm:: hall_timestamps[221]: 358658079
+I (59718) calculate_rpm:: hall_timestamps[222]: 358728045
+I (59718) calculate_rpm:: hall_timestamps[223]: 358798250
+I (59728) calculate_rpm:: hall_timestamps[224]: 358865211
+I (59728) calculate_rpm:: hall_timestamps[225]: 358931094
+I (59738) calculate_rpm:: hall_timestamps[226]: 358997674
+I (59738) calculate_rpm:: hall_timestamps[227]: 359067225
+I (59748) calculate_rpm:: hall_timestamps[228]: 359137196
+I (59748) calculate_rpm:: hall_timestamps[229]: 359207405
+I (59758) calculate_rpm:: hall_timestamps[230]: 359274398
+I (59758) calculate_rpm:: hall_timestamps[231]: 359340246
+I (59768) calculate_rpm:: hall_timestamps[232]: 359406836
+I (59768) calculate_rpm:: hall_timestamps[233]: 359476375
+I (59778) calculate_rpm:: hall_timestamps[234]: 359546363
+I (59788) calculate_rpm:: hall_timestamps[235]: 359616534
+I (59788) calculate_rpm:: hall_timestamps[236]: 359683510
+I (59798) calculate_rpm:: hall_timestamps[237]: 359749413
+I (59798) calculate_rpm:: hall_timestamps[238]: 359816008
+I (59808) calculate_rpm:: hall_timestamps[239]: 359885558
+I (59808) calculate_rpm:: hall_timestamps[240]: 359955522
+I (59818) calculate_rpm:: hall_timestamps[241]: 360025704
+I (59818) calculate_rpm:: hall_timestamps[242]: 360092693
+I (59828) calculate_rpm:: hall_timestamps[243]: 360158579
+I (59828) calculate_rpm:: hall_timestamps[244]: 360225142
+I (59838) calculate_rpm:: hall_timestamps[245]: 360294715
+I (59838) calculate_rpm:: hall_timestamps[246]: 360364667
+I (59848) calculate_rpm:: hall_timestamps[247]: 360434860
+I (59848) calculate_rpm:: hall_timestamps[248]: 360501856
+I (59858) calculate_rpm:: hall_timestamps[249]: 360560212
+I (59858) calculate_rpm:: hall_timestamps[250]: 360567742
+I (59868) calculate_rpm:: hall_timestamps[251]: 360634330
+I (59868) calculate_rpm:: hall_timestamps[252]: 360703888
+I (59878) calculate_rpm:: hall_timestamps[253]: 360773822
+I (59878) calculate_rpm:: hall_timestamps[254]: 360844032
+I (59888) calculate_rpm:: hall_timestamps[255]: 360911030
+I (59888) calculate_rpm:: dt_median_array[0]: 31792
+I (59898) calculate_rpm:: dt_median_array[1]: 38362
+I (59898) calculate_rpm:: dt_median_array[2]: 67007
+I (59908) calculate_rpm:: dt_median_array[3]: 69949
+/*-nan,360.0,1000.0,-nan*/
+/*-nan,350.0,1000.0,-nan*/
+/*-nan,340.0,1000.0,-nan*/
+/*-nan,330.0,1000.0,-nan*/
+/*-nan,320.0,1000.0,-nan*/
+/*-nan,310.0,1000.0,-nan*/
+/*-nan,300.0,1000.0,-nan*/
+/*-nan,290.0,1000.0,-nan*/
+/*-nan,280.0,1000.0,-nan*/
+/*-nan,270.0,1000.0,-nan*/
+/*-nan,260.0,1000.0,-nan*/
+/*-nan,250.0,1000.0,-nan*/
+/*-nan,240.0,1000.0,-nan*/
+/*-nan,230.0,1000.0,-nan*/
+I (60048) calculate_rpm:: strange rpm -nan
+I (60048) calculate_rpm:: hall_data.hall_timestamps_index: 10
+I (60048) calculate_rpm:: hall_data.ticks_since_last_trigger: 0
+I (60048) calculate_rpm:: hall_data.total_trigger_count: 62730
+I (60048) calculate_rpm:: hall_data.last_total_trigger_count: 62730
+I (60058) calculate_rpm:: hall_timestamps[0]: 482355253
+I (60068) calculate_rpm:: hall_timestamps[1]: 482421092
+I (60068) calculate_rpm:: hall_timestamps[2]: 482487634
+I (60078) calculate_rpm:: hall_timestamps[3]: 482557093
+I (60078) calculate_rpm:: hall_timestamps[4]: 482627062
+I (60088) calculate_rpm:: hall_timestamps[5]: 482697191
+I (60088) calculate_rpm:: hall_timestamps[6]: 482764165
+I (60088) calculate_rpm:: hall_timestamps[7]: 482830032
+I (60098) calculate_rpm:: hall_timestamps[8]: 482896571
+I (60098) calculate_rpm:: hall_timestamps[9]: 482966058
+I (60108) calculate_rpm:: hall_timestamps[10]: 483036012
+I (60108) calculate_rpm:: hall_timestamps[11]: 465660307
+I (60118) calculate_rpm:: hall_timestamps[12]: 465726822
+I (60118) calculate_rpm:: hall_timestamps[13]: 465796249
+I (60128) calculate_rpm:: hall_timestamps[14]: 465866166
+I (60128) calculate_rpm:: hall_timestamps[15]: 465936302
+I (60138) calculate_rpm:: hall_timestamps[16]: 466003240
+I (60148) calculate_rpm:: hall_timestamps[17]: 466069043
+I (60148) calculate_rpm:: hall_timestamps[18]: 466135564
+I (60158) calculate_rpm:: hall_timestamps[19]: 466205026
+I (60158) calculate_rpm:: hall_timestamps[20]: 466274953
+I (60168) calculate_rpm:: hall_timestamps[21]: 466345097
+I (60168) calculate_rpm:: hall_timestamps[22]: 466412023
+I (60178) calculate_rpm:: hall_timestamps[23]: 466477866
+I (60178) calculate_rpm:: hall_timestamps[24]: 466544313
+I (60188) calculate_rpm:: hall_timestamps[25]: 466613767
+I (60188) calculate_rpm:: hall_timestamps[26]: 466683673
+I (60198) calculate_rpm:: hall_timestamps[27]: 466753829
+I (60198) calculate_rpm:: hall_timestamps[28]: 466820722
+I (60208) calculate_rpm:: hall_timestamps[29]: 466886569
+I (60208) calculate_rpm:: hall_timestamps[30]: 466953066
+I (60218) calculate_rpm:: hall_timestamps[31]: 467022519
+I (60218) calculate_rpm:: hall_timestamps[32]: 467092460
+I (60228) calculate_rpm:: hall_timestamps[33]: 467162589
+I (60228) calculate_rpm:: hall_timestamps[34]: 467229519
+I (60238) calculate_rpm:: hall_timestamps[35]: 467295359
+I (60238) calculate_rpm:: hall_timestamps[36]: 467361878
+I (60248) calculate_rpm:: hall_timestamps[37]: 467431283
+I (60248) calculate_rpm:: hall_timestamps[38]: 467501221
+I (60258) calculate_rpm:: hall_timestamps[39]: 467571359
+I (60258) calculate_rpm:: hall_timestamps[40]: 467638295
+I (60268) calculate_rpm:: hall_timestamps[41]: 467704070
+I (60268) calculate_rpm:: hall_timestamps[42]: 467770678
+I (60278) calculate_rpm:: hall_timestamps[43]: 467840098
+I (60278) calculate_rpm:: hall_timestamps[44]: 467910052
+I (60288) calculate_rpm:: hall_timestamps[45]: 467980166
+I (60288) calculate_rpm:: hall_timestamps[46]: 468047109
+I (60298) calculate_rpm:: hall_timestamps[47]: 468112930
+I (60298) calculate_rpm:: hall_timestamps[48]: 468179493
+I (60308) calculate_rpm:: hall_timestamps[49]: 468248932
+I (60308) calculate_rpm:: hall_timestamps[50]: 468318869
+I (60318) calculate_rpm:: hall_timestamps[51]: 468389008
+I (60318) calculate_rpm:: hall_timestamps[52]: 468455946
+I (60328) calculate_rpm:: hall_timestamps[53]: 468521780
+I (60328) calculate_rpm:: hall_timestamps[54]: 468588319
+I (60338) calculate_rpm:: hall_timestamps[55]: 468657775
+I (60338) calculate_rpm:: hall_timestamps[56]: 468727714
+I (60348) calculate_rpm:: hall_timestamps[57]: 468797851
+I (60348) calculate_rpm:: hall_timestamps[58]: 468864799
+I (60358) calculate_rpm:: hall_timestamps[59]: 468930603
+I (60358) calculate_rpm:: hall_timestamps[60]: 468997152
+I (60368) calculate_rpm:: hall_timestamps[61]: 469066597
+I (60368) calculate_rpm:: hall_timestamps[62]: 469136565
+I (60378) calculate_rpm:: hall_timestamps[63]: 469206679
+I (60378) calculate_rpm:: hall_timestamps[64]: 469273612
+I (60388) calculate_rpm:: hall_timestamps[65]: 469339440
+I (60388) calculate_rpm:: hall_timestamps[66]: 469406012
+I (60398) calculate_rpm:: hall_timestamps[67]: 469475465
+I (60398) calculate_rpm:: hall_timestamps[68]: 469545397
+I (60408) calculate_rpm:: hall_timestamps[69]: 469615523
+I (60408) calculate_rpm:: hall_timestamps[70]: 469682483
+I (60418) calculate_rpm:: hall_timestamps[71]: 469748312
+I (60418) calculate_rpm:: hall_timestamps[72]: 469814854
+I (60428) calculate_rpm:: hall_timestamps[73]: 469884292
+I (60428) calculate_rpm:: hall_timestamps[74]: 469954228
+I (60438) calculate_rpm:: hall_timestamps[75]: 470024383
+I (60438) calculate_rpm:: hall_timestamps[76]: 470091332
+I (60448) calculate_rpm:: hall_timestamps[77]: 470157148
+I (60448) calculate_rpm:: hall_timestamps[78]: 470223637
+I (60458) calculate_rpm:: hall_timestamps[79]: 470293152
+I (60458) calculate_rpm:: hall_timestamps[80]: 470363065
+I (60468) calculate_rpm:: hall_timestamps[81]: 470433212
+I (60468) calculate_rpm:: hall_timestamps[82]: 470500135
+I (60478) calculate_rpm:: hall_timestamps[83]: 470565976
+I (60478) calculate_rpm:: hall_timestamps[84]: 470632476
+I (60488) calculate_rpm:: hall_timestamps[85]: 470701931
+I (60488) calculate_rpm:: hall_timestamps[86]: 470771865
+I (60498) calculate_rpm:: hall_timestamps[87]: 470842002
+I (60498) calculate_rpm:: hall_timestamps[88]: 470908941
+I (60508) calculate_rpm:: hall_timestamps[89]: 470974760
+I (60508) calculate_rpm:: hall_timestamps[90]: 471041268
+I (60518) calculate_rpm:: hall_timestamps[91]: 471110741
+I (60518) calculate_rpm:: hall_timestamps[92]: 471180672
+I (60528) calculate_rpm:: hall_timestamps[93]: 471250797
+I (60528) calculate_rpm:: hall_timestamps[94]: 471317709
+I (60538) calculate_rpm:: hall_timestamps[95]: 471383548
+I (60538) calculate_rpm:: hall_timestamps[96]: 471450117
+I (60548) calculate_rpm:: hall_timestamps[97]: 471519535
+I (60548) calculate_rpm:: hall_timestamps[98]: 471589492
+I (60558) calculate_rpm:: hall_timestamps[99]: 471659626
+I (60558) calculate_rpm:: hall_timestamps[100]: 471726573
+I (60568) calculate_rpm:: hall_timestamps[101]: 471792401
+I (60568) calculate_rpm:: hall_timestamps[102]: 471858940
+I (60578) calculate_rpm:: hall_timestamps[103]: 471928390
+I (60578) calculate_rpm:: hall_timestamps[104]: 471998330
+I (60588) calculate_rpm:: hall_timestamps[105]: 472068429
+I (60588) calculate_rpm:: hall_timestamps[106]: 472135364
+I (60598) calculate_rpm:: hall_timestamps[107]: 472201241
+I (60598) calculate_rpm:: hall_timestamps[108]: 472267765
+I (60608) calculate_rpm:: hall_timestamps[109]: 472337219
+I (60608) calculate_rpm:: hall_timestamps[110]: 472407200
+I (60618) calculate_rpm:: hall_timestamps[111]: 472477287
+I (60618) calculate_rpm:: hall_timestamps[112]: 472544263
+I (60628) calculate_rpm:: hall_timestamps[113]: 472610055
+I (60628) calculate_rpm:: hall_timestamps[114]: 472676608
+I (60638) calculate_rpm:: hall_timestamps[115]: 472746050
+I (60638) calculate_rpm:: hall_timestamps[116]: 472816010
+I (60648) calculate_rpm:: hall_timestamps[117]: 472886085
+I (60658) calculate_rpm:: hall_timestamps[118]: 472953047
+I (60658) calculate_rpm:: hall_timestamps[119]: 473018895
+I (60668) calculate_rpm:: hall_timestamps[120]: 473085386
+I (60668) calculate_rpm:: hall_timestamps[121]: 473154862
+I (60678) calculate_rpm:: hall_timestamps[122]: 473224792
+I (60678) calculate_rpm:: hall_timestamps[123]: 473294954
+I (60688) calculate_rpm:: hall_timestamps[124]: 473361872
+I (60688) calculate_rpm:: hall_timestamps[125]: 473427694
+I (60698) calculate_rpm:: hall_timestamps[126]: 473494202
+I (60698) calculate_rpm:: hall_timestamps[127]: 473563646
+I (60708) calculate_rpm:: hall_timestamps[128]: 473633540
+I (60708) calculate_rpm:: hall_timestamps[129]: 473703719
+I (60718) calculate_rpm:: hall_timestamps[130]: 473770613
+I (60718) calculate_rpm:: hall_timestamps[131]: 473836450
+I (60728) calculate_rpm:: hall_timestamps[132]: 473902998
+I (60728) calculate_rpm:: hall_timestamps[133]: 473972426
+I (60738) calculate_rpm:: hall_timestamps[134]: 474042381
+I (60738) calculate_rpm:: hall_timestamps[135]: 474112516
+I (60748) calculate_rpm:: hall_timestamps[136]: 474179452
+I (60748) calculate_rpm:: hall_timestamps[137]: 474245286
+I (60758) calculate_rpm:: hall_timestamps[138]: 474311795
+I (60758) calculate_rpm:: hall_timestamps[139]: 474381215
+I (60768) calculate_rpm:: hall_timestamps[140]: 474451140
+I (60768) calculate_rpm:: hall_timestamps[141]: 474521275
+I (60778) calculate_rpm:: hall_timestamps[142]: 474588186
+I (60778) calculate_rpm:: hall_timestamps[143]: 474654015
+I (60788) calculate_rpm:: hall_timestamps[144]: 474720553
+I (60788) calculate_rpm:: hall_timestamps[145]: 474790014
+I (60798) calculate_rpm:: hall_timestamps[146]: 474859921
+I (60798) calculate_rpm:: hall_timestamps[147]: 474930064
+I (60808) calculate_rpm:: hall_timestamps[148]: 474996981
+I (60808) calculate_rpm:: hall_timestamps[149]: 475062850
+I (60818) calculate_rpm:: hall_timestamps[150]: 475129350
+I (60818) calculate_rpm:: hall_timestamps[151]: 475198778
+I (60828) calculate_rpm:: hall_timestamps[152]: 475268680
+I (60828) calculate_rpm:: hall_timestamps[153]: 475338819
+I (60838) calculate_rpm:: hall_timestamps[154]: 475405762
+I (60838) calculate_rpm:: hall_timestamps[155]: 475471573
+I (60848) calculate_rpm:: hall_timestamps[156]: 475538102
+I (60848) calculate_rpm:: hall_timestamps[157]: 475607502
+I (60858) calculate_rpm:: hall_timestamps[158]: 475677483
+I (60868) calculate_rpm:: hall_timestamps[159]: 475747585
+I (60868) calculate_rpm:: hall_timestamps[160]: 475814551
+I (60878) calculate_rpm:: hall_timestamps[161]: 475880336
+I (60878) calculate_rpm:: hall_timestamps[162]: 475946851
+I (60888) calculate_rpm:: hall_timestamps[163]: 476016289
+I (60888) calculate_rpm:: hall_timestamps[164]: 476086219
+I (60898) calculate_rpm:: hall_timestamps[165]: 476156321
+I (60898) calculate_rpm:: hall_timestamps[166]: 476223266
+I (60908) calculate_rpm:: hall_timestamps[167]: 476289077
+I (60908) calculate_rpm:: hall_timestamps[168]: 476355629
+I (60918) calculate_rpm:: hall_timestamps[169]: 476425045
+I (60918) calculate_rpm:: hall_timestamps[170]: 476494964
+I (60928) calculate_rpm:: hall_timestamps[171]: 476565119
+I (60928) calculate_rpm:: hall_timestamps[172]: 476632054
+I (60938) calculate_rpm:: hall_timestamps[173]: 476697867
+I (60938) calculate_rpm:: hall_timestamps[174]: 476764377
+I (60948) calculate_rpm:: hall_timestamps[175]: 476833790
+I (60948) calculate_rpm:: hall_timestamps[176]: 476903703
+I (60958) calculate_rpm:: hall_timestamps[177]: 476973839
+I (60958) calculate_rpm:: hall_timestamps[178]: 477040731
+I (60968) calculate_rpm:: hall_timestamps[179]: 477106525
+I (60968) calculate_rpm:: hall_timestamps[180]: 477173029
+I (60978) calculate_rpm:: hall_timestamps[181]: 477242487
+I (60978) calculate_rpm:: hall_timestamps[182]: 477312378
+I (60988) calculate_rpm:: hall_timestamps[183]: 477382531
+I (60988) calculate_rpm:: hall_timestamps[184]: 477449417
+I (60998) calculate_rpm:: hall_timestamps[185]: 477515243
+I (60998) calculate_rpm:: hall_timestamps[186]: 477581692
+I (61008) calculate_rpm:: hall_timestamps[187]: 477651181
+I (61008) calculate_rpm:: hall_timestamps[188]: 477721033
+I (61018) calculate_rpm:: hall_timestamps[189]: 477791221
+I (61018) calculate_rpm:: hall_timestamps[190]: 477858095
+I (61028) calculate_rpm:: hall_timestamps[191]: 477923910
+I (61028) calculate_rpm:: hall_timestamps[192]: 477990419
+I (61038) calculate_rpm:: hall_timestamps[193]: 478059849
+I (61038) calculate_rpm:: hall_timestamps[194]: 478129759
+I (61048) calculate_rpm:: hall_timestamps[195]: 478199913
+I (61048) calculate_rpm:: hall_timestamps[196]: 478266819
+I (61058) calculate_rpm:: hall_timestamps[197]: 478332634
+I (61058) calculate_rpm:: hall_timestamps[198]: 478399125
+I (61068) calculate_rpm:: hall_timestamps[199]: 478468560
+I (61078) calculate_rpm:: hall_timestamps[200]: 478538455
+I (61078) calculate_rpm:: hall_timestamps[201]: 478608603
+I (61088) calculate_rpm:: hall_timestamps[202]: 478675538
+I (61088) calculate_rpm:: hall_timestamps[203]: 478741337
+I (61098) calculate_rpm:: hall_timestamps[204]: 478807858
+I (61098) calculate_rpm:: hall_timestamps[205]: 478877312
+I (61108) calculate_rpm:: hall_timestamps[206]: 478947232
+I (61108) calculate_rpm:: hall_timestamps[207]: 479017348
+I (61118) calculate_rpm:: hall_timestamps[208]: 479084289
+I (61118) calculate_rpm:: hall_timestamps[209]: 479150131
+I (61128) calculate_rpm:: hall_timestamps[210]: 479216617
+I (61128) calculate_rpm:: hall_timestamps[211]: 479286062
+I (61138) calculate_rpm:: hall_timestamps[212]: 479355986
+I (61138) calculate_rpm:: hall_timestamps[213]: 479426131
+I (61148) calculate_rpm:: hall_timestamps[214]: 479493023
+I (61148) calculate_rpm:: hall_timestamps[215]: 479558916
+I (61158) calculate_rpm:: hall_timestamps[216]: 479625403
+I (61158) calculate_rpm:: hall_timestamps[217]: 479694883
+I (61168) calculate_rpm:: hall_timestamps[218]: 479764819
+I (61168) calculate_rpm:: hall_timestamps[219]: 479834979
+I (61178) calculate_rpm:: hall_timestamps[220]: 479901916
+I (61178) calculate_rpm:: hall_timestamps[221]: 479967734
+I (61188) calculate_rpm:: hall_timestamps[222]: 480034268
+I (61188) calculate_rpm:: hall_timestamps[223]: 480103709
+I (61198) calculate_rpm:: hall_timestamps[224]: 480173642
+I (61198) calculate_rpm:: hall_timestamps[225]: 480243780
+I (61208) calculate_rpm:: hall_timestamps[226]: 480310719
+I (61208) calculate_rpm:: hall_timestamps[227]: 480376558
+I (61218) calculate_rpm:: hall_timestamps[228]: 480443129
+I (61218) calculate_rpm:: hall_timestamps[229]: 480512544
+I (61228) calculate_rpm:: hall_timestamps[230]: 480582553
+I (61228) calculate_rpm:: hall_timestamps[231]: 480652628
+I (61238) calculate_rpm:: hall_timestamps[232]: 480719606
+I (61238) calculate_rpm:: hall_timestamps[233]: 480785448
+I (61248) calculate_rpm:: hall_timestamps[234]: 480852004
+I (61248) calculate_rpm:: hall_timestamps[235]: 480921454
+I (61258) calculate_rpm:: hall_timestamps[236]: 480991415
+I (61258) calculate_rpm:: hall_timestamps[237]: 481061517
+I (61268) calculate_rpm:: hall_timestamps[238]: 481128483
+I (61268) calculate_rpm:: hall_timestamps[239]: 481194325
+I (61278) calculate_rpm:: hall_timestamps[240]: 481260868
+I (61288) calculate_rpm:: hall_timestamps[241]: 481330329
+I (61288) calculate_rpm:: hall_timestamps[242]: 481400286
+I (61298) calculate_rpm:: hall_timestamps[243]: 481470437
+I (61298) calculate_rpm:: hall_timestamps[244]: 481537393
+I (61308) calculate_rpm:: hall_timestamps[245]: 481603227
+I (61308) calculate_rpm:: hall_timestamps[246]: 481669798
+I (61318) calculate_rpm:: hall_timestamps[247]: 481739236
+I (61318) calculate_rpm:: hall_timestamps[248]: 481809198
+I (61328) calculate_rpm:: hall_timestamps[249]: 481879347
+I (61328) calculate_rpm:: hall_timestamps[250]: 481946291
+I (61338) calculate_rpm:: hall_timestamps[251]: 482012123
+I (61338) calculate_rpm:: hall_timestamps[252]: 482078683
+I (61348) calculate_rpm:: hall_timestamps[253]: 482148146
+I (61348) calculate_rpm:: hall_timestamps[254]: 482218163
+I (61358) calculate_rpm:: hall_timestamps[255]: 482288259
+I (61358) calculate_rpm:: dt_median_array[0]: 66539
+I (61368) calculate_rpm:: dt_median_array[1]: 69487
+/*-nan,220.0,1000.0,-nan*/
+I (61378) calculate_rpm:: strange rpm -nan
+I (61378) calculate_rpm:: hall_data.hall_timestamps_index: 44
+I (61378) calculate_rpm:: hall_data.ticks_since_last_trigger: 0
+I (61388) calculate_rpm:: hall_data.total_trigger_count: 64300
+I (61388) calculate_rpm:: hall_data.last_total_trigger_count: 64300
+I (61398) calculate_rpm:: hall_timestamps[0]: 586474471
+I (61408) calculate_rpm:: hall_timestamps[1]: 586544429
+I (61408) calculate_rpm:: hall_timestamps[2]: 586611532
+I (61408) calculate_rpm:: hall_timestamps[3]: 586677244
+I (61418) calculate_rpm:: hall_timestamps[4]: 586743867
+I (61418) calculate_rpm:: hall_timestamps[5]: 586813302
+I (61428) calculate_rpm:: hall_timestamps[6]: 586883248
+I (61428) calculate_rpm:: hall_timestamps[7]: 586953257
+I (61438) calculate_rpm:: hall_timestamps[8]: 587020312
+I (61438) calculate_rpm:: hall_timestamps[9]: 587086052
+I (61448) calculate_rpm:: hall_timestamps[10]: 587152649
+I (61448) calculate_rpm:: hall_timestamps[11]: 587222111
+I (61458) calculate_rpm:: hall_timestamps[12]: 587292054
+I (61458) calculate_rpm:: hall_timestamps[13]: 587362043
+I (61468) calculate_rpm:: hall_timestamps[14]: 587429074
+I (61468) calculate_rpm:: hall_timestamps[15]: 587494834
+I (61478) calculate_rpm:: hall_timestamps[16]: 587561451
+I (61478) calculate_rpm:: hall_timestamps[17]: 587630900
+I (61488) calculate_rpm:: hall_timestamps[18]: 587700837
+I (61488) calculate_rpm:: hall_timestamps[19]: 587770791
+I (61498) calculate_rpm:: hall_timestamps[20]: 587837881
+I (61498) calculate_rpm:: hall_timestamps[21]: 587903602
+I (61508) calculate_rpm:: hall_timestamps[22]: 587970244
+I (61518) calculate_rpm:: hall_timestamps[23]: 588039680
+I (61518) calculate_rpm:: hall_timestamps[24]: 588109608
+I (61528) calculate_rpm:: hall_timestamps[25]: 588179611
+I (61528) calculate_rpm:: hall_timestamps[26]: 588246662
+I (61538) calculate_rpm:: hall_timestamps[27]: 588312412
+I (61538) calculate_rpm:: hall_timestamps[28]: 588378991
+I (61548) calculate_rpm:: hall_timestamps[29]: 588448461
+I (61548) calculate_rpm:: hall_timestamps[30]: 588518422
+I (61558) calculate_rpm:: hall_timestamps[31]: 588588410
+I (61558) calculate_rpm:: hall_timestamps[32]: 588655430
+I (61568) calculate_rpm:: hall_timestamps[33]: 588721206
+I (61568) calculate_rpm:: hall_timestamps[34]: 588787783
+I (61578) calculate_rpm:: hall_timestamps[35]: 588857249
+I (61578) calculate_rpm:: hall_timestamps[36]: 588927189
+I (61588) calculate_rpm:: hall_timestamps[37]: 588997215
+I (61588) calculate_rpm:: hall_timestamps[38]: 589064243
+I (61598) calculate_rpm:: hall_timestamps[39]: 589129974
+I (61598) calculate_rpm:: hall_timestamps[40]: 589196551
+I (61608) calculate_rpm:: hall_timestamps[41]: 589266027
+I (61608) calculate_rpm:: hall_timestamps[42]: 589335957
+I (61618) calculate_rpm:: hall_timestamps[43]: 589405936
+I (61618) calculate_rpm:: hall_timestamps[44]: 589473040
+I (61628) calculate_rpm:: hall_timestamps[45]: 572167539
+I (61628) calculate_rpm:: hall_timestamps[46]: 572237564
+I (61638) calculate_rpm:: hall_timestamps[47]: 572304589
+I (61638) calculate_rpm:: hall_timestamps[48]: 572370330
+I (61648) calculate_rpm:: hall_timestamps[49]: 572436940
+I (61648) calculate_rpm:: hall_timestamps[50]: 572506376
+I (61658) calculate_rpm:: hall_timestamps[51]: 572576335
+I (61658) calculate_rpm:: hall_timestamps[52]: 572646388
+I (61668) calculate_rpm:: hall_timestamps[53]: 572713375
+I (61668) calculate_rpm:: hall_timestamps[54]: 572779148
+I (61678) calculate_rpm:: hall_timestamps[55]: 572845714
+I (61678) calculate_rpm:: hall_timestamps[56]: 572915171
+I (61688) calculate_rpm:: hall_timestamps[57]: 572985055
+I (61688) calculate_rpm:: hall_timestamps[58]: 573055148
+I (61698) calculate_rpm:: hall_timestamps[59]: 573122122
+I (61698) calculate_rpm:: hall_timestamps[60]: 573187921
+I (61708) calculate_rpm:: hall_timestamps[61]: 573254476
+I (61708) calculate_rpm:: hall_timestamps[62]: 573323943
+I (61718) calculate_rpm:: hall_timestamps[63]: 573393852
+I (61718) calculate_rpm:: hall_timestamps[64]: 573463922
+I (61728) calculate_rpm:: hall_timestamps[65]: 573530897
+I (61728) calculate_rpm:: hall_timestamps[66]: 573596652
+I (61738) calculate_rpm:: hall_timestamps[67]: 573663247
+I (61738) calculate_rpm:: hall_timestamps[68]: 573732660
+I (61748) calculate_rpm:: hall_timestamps[69]: 573802599
+I (61748) calculate_rpm:: hall_timestamps[70]: 573872624
+I (61758) calculate_rpm:: hall_timestamps[71]: 573939639
+I (61758) calculate_rpm:: hall_timestamps[72]: 574005402
+I (61768) calculate_rpm:: hall_timestamps[73]: 574071985
+I (61768) calculate_rpm:: hall_timestamps[74]: 574141402
+I (61778) calculate_rpm:: hall_timestamps[75]: 574211361
+I (61778) calculate_rpm:: hall_timestamps[76]: 574281394
+I (61788) calculate_rpm:: hall_timestamps[77]: 574348373
+I (61788) calculate_rpm:: hall_timestamps[78]: 574414134
+I (61798) calculate_rpm:: hall_timestamps[79]: 574480694
+I (61798) calculate_rpm:: hall_timestamps[80]: 574550129
+I (61808) calculate_rpm:: hall_timestamps[81]: 574620059
+I (61808) calculate_rpm:: hall_timestamps[82]: 574690116
+I (61818) calculate_rpm:: hall_timestamps[83]: 574757084
+I (61818) calculate_rpm:: hall_timestamps[84]: 574822862
+I (61828) calculate_rpm:: hall_timestamps[85]: 574889385
+I (61828) calculate_rpm:: hall_timestamps[86]: 574958840
+I (61838) calculate_rpm:: hall_timestamps[87]: 575028735
+I (61838) calculate_rpm:: hall_timestamps[88]: 575098786
+I (61848) calculate_rpm:: hall_timestamps[89]: 575165786
+I (61848) calculate_rpm:: hall_timestamps[90]: 575231549
+I (61858) calculate_rpm:: hall_timestamps[91]: 575298126
+I (61858) calculate_rpm:: hall_timestamps[92]: 575367580
+I (61868) calculate_rpm:: hall_timestamps[93]: 575437530
+I (61868) calculate_rpm:: hall_timestamps[94]: 575507557
+I (61878) calculate_rpm:: hall_timestamps[95]: 575574546

@@ -14,7 +14,7 @@
 #include "driver/gptimer.h"
 #include "pid_ctrl.h"
 #include "sdkconfig.h"
-
+#include <math.h>
 #include "esp_system.h"
 #include "esp_intr_alloc.h"
 #include "esp32/rom/ets_sys.h"
@@ -71,31 +71,14 @@ static bool IRAM_ATTR timer_isr(gptimer_handle_t timer,const gptimer_alarm_event
 //ISR runs when hall sensor.
 static bool IRAM_ATTR hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcpwm_capture_event_data_t *edata, void *user_data)
 {
-
     uint32_t edgetimestamp = edata->cap_value;
-
     hall_data_t *hall_data = (hall_data_t *)user_data;
 
-    // get last timestamp
-    uint32_t last_index = hall_data->hall_timestamps_index;
-    uint32_t last_timestamp = hall_data->hall_timestamps[last_index];
-
-    uint32_t dt_since_last_pulse = (edgetimestamp > last_timestamp ) ? (edgetimestamp - last_timestamp) : (UINT32_MAX - last_timestamp) + edgetimestamp;
-
-    // only process if time since last pulse is valid
-    if (dt_since_last_pulse < MIN_VALID_DT) {
-        return false;  // ignore this edge
-    }
-
-    // update hall data
     hall_data->total_trigger_count++;
 
-    hall_data->hall_timestamps_index =
-        (hall_data->hall_timestamps_index + 1) % HALL_BUFFER_SIZE;
+    hall_data->hall_timestamps_index = (hall_data->hall_timestamps_index + 1) % HALL_BUFFER_SIZE;
 
     hall_data->hall_timestamps[hall_data->hall_timestamps_index] = edgetimestamp;
-
-    ets_printf("/*%lu*/\n", dt_since_last_pulse);
 
     return false;
             
@@ -108,8 +91,8 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "Create PID control block");
     pid_ctrl_parameter_t Motor_1_pid_runtime_param = {
-        .kp = 0.13,
-        .ki = 0.025,
+        .kp = 0.3,
+        .ki = 0.015,
         .kd = 0.0,
         .cal_type = PID_CAL_TYPE_INCREMENTAL,
         .max_output   = MAX_SPEED,
@@ -283,9 +266,9 @@ void app_main(void)
 
     //uint64_t current_gptimer_timestamp = 0;
 
-    //float step = 1; // RPM step for testing
+    //float step = 5; // RPM step for testing
 
-    motor_1_data.target_rpm = 5000;
+    motor_1_data.target_rpm = 1000;
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise wdtd triggers
@@ -314,31 +297,32 @@ void app_main(void)
         }
 
 
-        //float smoothing_factor = 0.9f - (motor_1_data.target_rpm * 0.85f / 2000.0f);
+        float smoothing_factor = 0.9f - (motor_1_data.target_rpm * 0.85f / 2000.0f);
 
         // Clamp between 0.05 and 0.9
-        //if (smoothing_factor < 0.05f) smoothing_factor = 0.05f;
-        //if (smoothing_factor > 0.9f) smoothing_factor = 0.9f;
+        if (smoothing_factor < 0.025f) smoothing_factor = 0.025f;
+        if (smoothing_factor > 0.9f) smoothing_factor = 0.9f;
 
-        //float measured_rpm = calculate_rpm(hall_1_data, motor_1_data.rpm);
+        float measured_rpm = calculate_rpm(hall_1_data, &motor_1_data);
 
 
-        motor_1_data.rpm = calculate_rpm(Hall_1_local_copy, &motor_1_data); //(1.0f - smoothing_factor) * motor_1_data.rpm + smoothing_factor * measured_rpm;
+        motor_1_data.rpm = (1.0f - smoothing_factor) * motor_1_data.rpm + smoothing_factor * measured_rpm;
 
 
 
         
-        if (motor_1_data.new_speed < 0)
-        {
-            motor_1_data.rpm = -motor_1_data.rpm; 
+        // negate rpm if speed output is negative.
+        /*
+        if (motor_1_data.new_speed < 0) {
+            motor_1_data.rpm = -motor_1_data.rpm;
         }
-        
+        */
 
         motor_1_data.error = motor_1_data.target_rpm - motor_1_data.rpm;
 
         pid_compute(Motor_1_pid_ctrl, motor_1_data.error, &motor_1_data.new_speed);
 
-        motor_1_data.new_speed = 500; // for testing
+        //motor_1_data.new_speed = 500; // for testing
 
 
         ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(motor_1_data.new_speed)));
@@ -359,17 +343,20 @@ void app_main(void)
 
             if (motor_1_data.target_rpm >= MAX_RPM || motor_1_data.target_rpm <= MIN_RPM) {
                     step *= -1;
+                    step *= 2;
+                    if (step > 50) {step = 50;}
                     motor_1_data.target_rpm = (motor_1_data.target_rpm >= MAX_RPM) ? MAX_RPM : MIN_RPM;
-                    speed_pause = 2000;
+                    speed_pause = 1000;
                 }
             else if (motor_1_data.target_rpm == 0) {
                     speed_pause = 1000;
                 }
             }
-        
         */
         
-        //printf("/*%.1f,%.1f,%.1f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed);
+        
+        
+        printf("/*%.1f,%.1f,%.1f,%.1f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed, motor_1_data.error);
 
         
         if (loopcount % 200== 0) { 
