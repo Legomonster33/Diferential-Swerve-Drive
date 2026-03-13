@@ -28,6 +28,8 @@
 #include "map_speed_to_pulsewidth.h"
 #include "map_target_rpm_to_speed.h"
 
+#include "init_pid.h"
+
 static const char *TAG = "Swerve:";
 
 #define TIMEBASE_RESOLUTION_HZ 1000000  // 1MHz, 1us per tick
@@ -45,6 +47,8 @@ static gptimer_handle_t gptimer_200_hz = NULL;
 
 
 motor_data_t motor_1_data = {0};
+
+pid_ctrl_block_handle_t Motor_1_pid_ctrl = NULL;
 
 //static portMUX_TYPE my_mux = portMUX_INITIALIZER_UNLOCKED; //if we want to use taskENTER_CRITICAL
 
@@ -76,6 +80,9 @@ static bool IRAM_ATTR hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan,
 void app_main(void)
 {
 
+
+    init_pid(&Motor_1_pid_ctrl, &motor_1_config);
+    /*
     ESP_LOGI(TAG, "Create PID control block");
     pid_ctrl_parameter_t Motor_1_pid_runtime_param = {
         .kp = motor_1_config.kp,
@@ -87,12 +94,11 @@ void app_main(void)
         .max_integral = 100000,
         .min_integral = -100000,
     };
-    pid_ctrl_block_handle_t Motor_1_pid_ctrl = NULL;
     pid_ctrl_config_t Motor_1_pid_config = {
         .init_param = Motor_1_pid_runtime_param,
     };
     ESP_ERROR_CHECK(pid_new_control_block(&Motor_1_pid_config, &Motor_1_pid_ctrl));
-
+    */
 
 
     ESP_LOGI(TAG, "Create gptimer for 200hz");
@@ -218,6 +224,9 @@ void app_main(void)
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer, MCPWM_TIMER_START_NO_STOP));
     
     
+
+
+
 
     int loopcount = 0;
 
