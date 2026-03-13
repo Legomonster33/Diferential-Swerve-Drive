@@ -29,51 +29,57 @@
 #include "map_target_rpm_to_speed.h"
 
 #include "init_pid.h"
+#include "init_gptimer.h"
+#include "init_capture_timer.h"
+#include "init_pwm_operator.h"
 
-static const char *TAG = "Swerve:";
-
-#define TIMEBASE_RESOLUTION_HZ 1000000  // 1MHz, 1us per tick
-#define SERVO_TIMEBASE_PERIOD        5000    // 5000 ticks, 5ms
-
-
+//static const char *TAG = "Swerve:";
 
 
 
-bool main_isr_flag = false;
 
-static gptimer_handle_t gptimer_200_hz = NULL;
+
+
+
+
 
 //static gptimer_handle_t gptimer_timestamping = NULL;
 
+bool main_isr_flag = false;
 
 motor_data_t motor_1_data = {0};
 
 pid_ctrl_block_handle_t Motor_1_pid_ctrl = NULL;
+
+mcpwm_cmpr_handle_t MOTOR_1_PWM_DUTY = NULL;
 
 //static portMUX_TYPE my_mux = portMUX_INITIALIZER_UNLOCKED; //if we want to use taskENTER_CRITICAL
 
 
 
 //200hz ISR, trigger by GPtimer.
+
+/*
 static bool IRAM_ATTR timer_isr(gptimer_handle_t timer,const gptimer_alarm_event_data_t *edata,void *user_ctx)
 {
     main_isr_flag = true;                   // set flag for main loop
     return false;                            // no context switch needed
 }
+*/
 
 //ISR runs when hall sensor.
-static bool IRAM_ATTR hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcpwm_capture_event_data_t *edata, void *user_data)
-{
-    hall_data_t *hall_data = (hall_data_t *)user_data;
+// static bool IRAM_ATTR hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcpwm_capture_event_data_t *edata, void *user_data)
+// {
+//     hall_data_t *hall_data = (hall_data_t *)user_data;
 
-    hall_data->total_trigger_count++;
+//     hall_data->total_trigger_count++;
 
-    hall_data->hall_timestamps_index = (hall_data->hall_timestamps_index + 1) % HALL_BUFFER_SIZE;
+//     hall_data->hall_timestamps_index = (hall_data->hall_timestamps_index + 1) % HALL_BUFFER_SIZE;
 
-    hall_data->hall_timestamps[hall_data->hall_timestamps_index] = edata->cap_value;
+//     hall_data->hall_timestamps[hall_data->hall_timestamps_index] = edata->cap_value;
 
-    return false;
-}
+//     return false;
+// }
 
 
 
@@ -101,7 +107,8 @@ void app_main(void)
     */
 
 
-    ESP_LOGI(TAG, "Create gptimer for 200hz");
+    init_gptimer_200hz(&main_isr_flag);
+    /*   ESP_LOGI(TAG, "Create gptimer for 200hz");
     gptimer_config_t gp_timer_config_200hz = {
         .clk_src = GPTIMER_CLK_SRC_DEFAULT,
         .direction = GPTIMER_COUNT_UP,
@@ -128,9 +135,12 @@ void app_main(void)
     ESP_LOGI(TAG, "Enable timer");
     ESP_ERROR_CHECK(gptimer_enable(gptimer_200_hz));
     ESP_ERROR_CHECK(gptimer_start(gptimer_200_hz));
+    */
 
 
 
+    init_capture_timer(motor_1_config.hall_pin, &motor_1_data.hall_data);
+    /*
     ESP_LOGI(TAG, "Install capture timer");
     mcpwm_cap_timer_handle_t cap_timer = NULL;
     mcpwm_capture_timer_config_t cap_conf = {
@@ -166,16 +176,12 @@ void app_main(void)
     ESP_LOGI(TAG, "Enable and start capture timer");
     ESP_ERROR_CHECK(mcpwm_capture_timer_enable(cap_timer));
     ESP_ERROR_CHECK(mcpwm_capture_timer_start(cap_timer));
+    */
 
 
-
-
-
-
-
-
-
-    ESP_LOGI(TAG, "Create timer and operator");
+    init_pwm_operator(motor_1_config.pwm_pin, &MOTOR_1_PWM_DUTY);
+    /*
+    ESP_LOGI(TAG, "Create pwm timer and operator");
     mcpwm_timer_handle_t timer = NULL;
     mcpwm_timer_config_t timer_config = {
         .group_id = 0,
@@ -196,7 +202,7 @@ void app_main(void)
     ESP_ERROR_CHECK(mcpwm_operator_connect_timer(oper, timer));
 
     ESP_LOGI(TAG, "Create MOTOR_1_PWM_DUTY and generator from the operator");
-    mcpwm_cmpr_handle_t MOTOR_1_PWM_DUTY = NULL;
+
     mcpwm_comparator_config_t comparator_config = {
         .flags.update_cmp_on_tez = true,
     };
@@ -222,8 +228,10 @@ void app_main(void)
     ESP_LOGI(TAG, "Enable and start timer");
     ESP_ERROR_CHECK(mcpwm_timer_enable(timer));
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer, MCPWM_TIMER_START_NO_STOP));
+    */
     
-    
+
+
 
 
 
