@@ -107,11 +107,10 @@ void app_main(void)
 
     //uint64_t current_gptimer_timestamp = 0;
 
-    float step_dir = 20; // positive for increasing speed, negative for decreasing
-    float step_size = 20; // to increase step size after each full cycle
 
-    motor_1_data.target_rpm = 5000;
-    motor_2_data.target_rpm = 5000;
+
+    motor_1_data.target_rpm = 0;
+    motor_2_data.target_rpm = 0;
 
     motor_1_data.rpm = 0;
     motor_2_data.rpm = 0;
@@ -123,61 +122,46 @@ void app_main(void)
 
         if (main_isr_flag){
         
-        update_rpm(&motor_1_data);
-        update_rpm(&motor_2_data);
-        
-        update_pid_feedforward(&motor_1_data, &motor_1_config);
-        update_pid_feedforward(&motor_2_data, &motor_2_config);
+            update_rpm(&motor_1_data);
+            update_rpm(&motor_2_data);
+            
+            update_pid_feedforward(&motor_1_data, &motor_1_config);
+            update_pid_feedforward(&motor_2_data, &motor_2_config);
 
-        motor_1_data.new_speed = motor_1_data.feedforward + motor_1_data.pid_output;
-        motor_2_data.new_speed = motor_2_data.feedforward + motor_2_data.pid_output;
+            motor_1_data.new_speed = motor_1_data.feedforward + motor_1_data.pid_output;
+            motor_2_data.new_speed = motor_2_data.feedforward + motor_2_data.pid_output;
 
-        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_1_data.pwm_comparator, map_speed_to_pulsewidth(motor_1_data.new_speed)));
-        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_2_data.pwm_comparator, map_speed_to_pulsewidth(motor_2_data.new_speed)));
+            ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_1_data.pwm_comparator, map_speed_to_pulsewidth(motor_1_data.new_speed)));
+            ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_2_data.pwm_comparator, map_speed_to_pulsewidth(motor_2_data.new_speed)));
 
-        
+            
 
-        
-        // Adjust speed
+            
+            // Adjust speed
 
-        /*
-        if (speed_pause > 0) {
-            speed_pause--;
-            }else {
+            
+            if (speed_pause > 0) {
+                speed_pause--;
+                }else {
+                    
+                    motor_1_data.target_rpm = rand() % (motor_1_config.max_rpm - motor_1_config.min_rpm) + motor_1_config.min_rpm; //random target rpm between min_rpm and max_rpm
+                    motor_2_data.target_rpm = rand() % (motor_2_config.max_rpm - motor_2_config.min_rpm) + motor_2_config.min_rpm; //random target rpm between min_rpm and max_rpm
 
-                motor_1_data.target_rpm += step_dir;
-
-                if (motor_1_data.target_rpm >= motor_1_config.max_rpm || motor_1_data.target_rpm <= motor_1_config.min_rpm) {
-
-                    motor_1_data.target_rpm = (motor_1_data.target_rpm >= motor_1_config.max_rpm) ? motor_1_config.max_rpm : motor_1_config.min_rpm;
-
-                    step_dir *= -1;
-
-                    if (step_dir > 0) {
-
-                        step_size += 20;
-                        if (step_size > 400) {
-                            step_size = 20;
-                        }
-                    }
-
-                    step_dir = (step_dir > 0) ? step_size : -step_size;
-
-                    speed_pause = 25;
+                    speed_pause = 1000;
                 }
+                    
                 
-            }
-        */
-        
+            
+            
 
-        printf("/*%.1f, %.1f, %.1f, %.1f, %.1f, %.1f,", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed, motor_1_data.pid_output,motor_1_data.feedforward,motor_1_data.error);
-        printf("%.1f, %.1f, %.1f, %.1f, %.1f, %.1f*/\r\n", motor_2_data.rpm, motor_2_data.target_rpm, motor_2_data.new_speed, motor_2_data.pid_output,motor_2_data.feedforward,motor_2_data.error);
-        
+            printf("/*%.0f,%.0f,%.0f,%.0f,", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed,motor_1_data.error);
+            printf("%.0f,%.0f,%.0f,%.0f*/\r\n", motor_2_data.rpm, motor_2_data.target_rpm, motor_2_data.new_speed,motor_2_data.error);
+            
 
+            
+            
+            main_isr_flag = false;
         
-        
-        main_isr_flag = false;
-    
     }
     }
 }
