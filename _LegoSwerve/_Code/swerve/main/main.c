@@ -22,18 +22,14 @@
 
 #include "hall_data.h"
 #include "motor_data.h"
+#include "motor_config.h"
 
+#include "update_rpm.h"
 #include "calculate_rpm.h"
 #include "map_speed_to_pulsewidth.h"
 #include "map_target_rpm_to_speed.h"
 
 static const char *TAG = "Swerve:";
-
-
-
-#define MOTOR_1_GPIO             25        // GPIO connects to the PWM signal line
-
-#define HALL_1_GPIO              32        // GPIO connects to the hall sensor output
 
 #define TIMEBASE_RESOLUTION_HZ 1000000  // 1MHz, 1us per tick
 #define SERVO_TIMEBASE_PERIOD        5000    // 5000 ticks, 5ms
@@ -46,15 +42,12 @@ bool main_isr_flag = false;
 
 static gptimer_handle_t gptimer_200_hz = NULL;
 
-static gptimer_handle_t gptimer_timestamping = NULL;
+//static gptimer_handle_t gptimer_timestamping = NULL;
 
 
-static hall_data_t hall_1_data = {0};
+motor_data_t motor_1_data = {0};
 
-static motor_data_t motor_1_data = {0};
-
-static portMUX_TYPE my_mux = portMUX_INITIALIZER_UNLOCKED;
-
+//static portMUX_TYPE my_mux = portMUX_INITIALIZER_UNLOCKED; //if we want to use taskENTER_CRITICAL
 
 
 
@@ -90,9 +83,9 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "Create PID control block");
     pid_ctrl_parameter_t Motor_1_pid_runtime_param = {
-        .kp = 0.2,
-        .ki = 0.005,
-        .kd = 0.0,
+        .kp = motor_1_config.kp,
+        .ki = motor_1_config.ki,
+        .kd = motor_1_config.kd,
         .cal_type = PID_CAL_TYPE_POSITIONAL,
         .max_output   = MAX_SPEED/5,
         .min_output   = MIN_SPEED/5,
@@ -142,7 +135,7 @@ void app_main(void)
 
 
     
-
+    /*
     ESP_LOGI(TAG, "Create gptimer for timestamping");
     gptimer_config_t gp_timer_config_timestamping = {
         .clk_src = GPTIMER_CLK_SRC_DEFAULT,
@@ -155,7 +148,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Enable timer");
     ESP_ERROR_CHECK(gptimer_enable(gptimer_timestamping));
     ESP_ERROR_CHECK(gptimer_start(gptimer_timestamping));
-
+    */
 
 
 
@@ -171,7 +164,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Install capture channel");
     mcpwm_cap_channel_handle_t cap_chan = NULL;
     mcpwm_capture_channel_config_t cap_ch_conf = {
-        .gpio_num = HALL_1_GPIO,
+        .gpio_num = motor_1_config.hall_pin,
         .prescale = 1,
         // capture on both edge
         .flags.neg_edge = false,
@@ -187,7 +180,7 @@ void app_main(void)
         .on_cap = hall_trigger_function,
     };
 
-    ESP_ERROR_CHECK(mcpwm_capture_channel_register_event_callbacks(cap_chan, &cbs, &hall_1_data));
+    ESP_ERROR_CHECK(mcpwm_capture_channel_register_event_callbacks(cap_chan, &cbs, &motor_1_data.hall_data));
 
     ESP_LOGI(TAG, "Enable capture channel");
     ESP_ERROR_CHECK(mcpwm_capture_channel_enable(cap_chan));
@@ -233,7 +226,7 @@ void app_main(void)
 
     mcpwm_gen_handle_t generator = NULL;
     mcpwm_generator_config_t generator_config = {
-        .gen_gpio_num = MOTOR_1_GPIO,
+        .gen_gpio_num = motor_1_config.pwm_pin,
     };
     ESP_ERROR_CHECK(mcpwm_new_generator(oper, &generator_config, &generator));
 
@@ -253,11 +246,6 @@ void app_main(void)
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer, MCPWM_TIMER_START_NO_STOP));
     
     
-    
-    
-
-
-
 
     int loopcount = 0;
 
@@ -265,7 +253,8 @@ void app_main(void)
 
     //uint64_t current_gptimer_timestamp = 0;
 
-    float step = 5; // RPM step for testing
+    float step_dir = 20; // positive for increasing speed, negative for decreasing
+    float step_size = 20; // to increase step size after each full cycle
 
     motor_1_data.target_rpm = 0;
     motor_1_data.rpm = 0;
@@ -281,45 +270,13 @@ void app_main(void)
         if (main_isr_flag){
         
 
-        taskENTER_CRITICAL(&my_mux);
-        hall_data_t Hall_1_local_copy = hall_1_data;
-        taskEXIT_CRITICAL(&my_mux);
-
-
-
-        hall_1_data.last_total_trigger_count = Hall_1_local_copy.total_trigger_count;
-        hall_1_data.hall_timestamps_last_index = Hall_1_local_copy.hall_timestamps_index;
-
-        if (Hall_1_local_copy.total_trigger_count == Hall_1_local_copy.last_total_trigger_count) {
-            hall_1_data.ticks_since_last_trigger += 1;
-        } else {
-            hall_1_data.ticks_since_last_trigger = 0;
-        }
-
-
-        float smoothing_factor = 0.9f - (motor_1_data.target_rpm * 0.85f / 2000.0f);
-
-        if (smoothing_factor < 0.1f) smoothing_factor = 0.1f;
-        if (smoothing_factor > 0.9f) smoothing_factor = 0.9f;
-
-        float measured_rpm = calculate_rpm(hall_1_data, &motor_1_data);
-
-
-        motor_1_data.rpm = (1.0f - smoothing_factor) * motor_1_data.rpm + smoothing_factor * measured_rpm;
-
+        update_rpm(&motor_1_data);
         
-        
-        if (motor_1_data.new_speed < 0) {   // negate rpm if speed output is negative.
-            motor_1_data.rpm = -motor_1_data.rpm;
-        }
-        
-
-
 
 
         motor_1_data.error = (motor_1_data.target_rpm - motor_1_data.rpm);
 
-        motor_1_data.feedforward = map_target_rpm_to_speed(motor_1_data.target_rpm);
+        motor_1_data.feedforward = map_target_rpm_to_speed(motor_1_data.target_rpm, motor_1_config.max_rpm, motor_1_config.min_rpm);
 
         pid_compute(Motor_1_pid_ctrl, motor_1_data.error, &motor_1_data.pid_output);
 
@@ -341,21 +298,30 @@ void app_main(void)
 
         
         if (speed_pause > 0) {
-                speed_pause--;
-        } 
+            speed_pause--;
+            }else {
 
+                motor_1_data.target_rpm += step_dir;
 
-        else {
-            motor_1_data.target_rpm += step;
+                if (motor_1_data.target_rpm >= motor_1_config.max_rpm || motor_1_data.target_rpm <= motor_1_config.min_rpm) {
 
-            if (motor_1_data.target_rpm >= MAX_RPM || motor_1_data.target_rpm <= MIN_RPM) {
-                    step *= -1;
-                    motor_1_data.target_rpm = (motor_1_data.target_rpm >= MAX_RPM) ? MAX_RPM : MIN_RPM;
-                    speed_pause = 400;
+                    motor_1_data.target_rpm = (motor_1_data.target_rpm >= motor_1_config.max_rpm) ? motor_1_config.max_rpm : motor_1_config.min_rpm;
+
+                    step_dir *= -1;
+
+                    if (step_dir > 0) {
+
+                        step_size += 20;
+                        if (step_size > 400) {
+                            step_size = 20;
+                        }
+                    }
+
+                    step_dir = (step_dir > 0) ? step_size : -step_size;
+
+                    speed_pause = 25;
                 }
-            else if (motor_1_data.target_rpm == 0) {
-                    speed_pause = 400;
-                }
+                
             }
         
         

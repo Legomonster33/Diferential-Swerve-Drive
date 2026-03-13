@@ -17,13 +17,13 @@ static int cmp_u32(const void *a, const void *b)
     return 0;
 }
 
-float calculate_rpm(hall_data_t hall_data, motor_data_t *motor_data) {
+float calculate_rpm(motor_data_t *motor_data) {
     float rpm;
 
+    hall_data_t *hall_data = &motor_data->hall_data;
 
-    if (hall_data.ticks_since_last_trigger > MOTOR_STALL_TICKS) {
+    if (hall_data->ticks_since_last_trigger > MOTOR_STALL_TICKS) {
         rpm = 0.0;
-        //ESP_LOGI(TAG, "0 rpm stall detected dt %llu, hall_data.gptimer_last_update_timestamp: %llu, hall_data.gptimer_last_isr_timestamp: %llu", dt_since_last_pulse, hall_data.gptimer_last_update_timestamp, hall_data.gptimer_last_isr_timestamp);
         return rpm;
     }
 
@@ -32,24 +32,21 @@ float calculate_rpm(hall_data_t hall_data, motor_data_t *motor_data) {
     uint32_t pulses_to_median = pulses_per_second * TARGET_WINDOW_SEC;
 
     if (pulses_to_median < 1)
-    pulses_to_median = 8;
+        pulses_to_median = 8;
 
     if (pulses_to_median > 128)
-    pulses_to_median = 128;
+        pulses_to_median = 128;
 
-    //pulses_to_median = 1;
-
-    uint32_t current_index = hall_data.hall_timestamps_index;
+    uint32_t current_index = hall_data->hall_timestamps_index;
 
     uint32_t dt_median_array[pulses_to_median];
-
 
     uint32_t oldest_index = (current_index + HALL_BUFFER_SIZE - pulses_to_median - 1) % HALL_BUFFER_SIZE;
 
     for (int i = 0; i < pulses_to_median; i++) {
 
-        uint32_t older = hall_data.hall_timestamps[(oldest_index + i) % HALL_BUFFER_SIZE];
-        uint32_t newer = hall_data.hall_timestamps[(oldest_index + i + 1) % HALL_BUFFER_SIZE];
+        uint32_t older = hall_data->hall_timestamps[(oldest_index + i) % HALL_BUFFER_SIZE];
+        uint32_t newer = hall_data->hall_timestamps[(oldest_index + i + 1) % HALL_BUFFER_SIZE];
 
         uint32_t delta = newer - older;
 
@@ -79,16 +76,16 @@ float calculate_rpm(hall_data_t hall_data, motor_data_t *motor_data) {
 
     if (isnan(rpm) || rpm > 15000 || rpm < -15000) {
         ESP_LOGI(TAG, "strange rpm %f", rpm);
-        ESP_LOGI(TAG, "hall_data.hall_timestamps_index: %u", hall_data.hall_timestamps_index);
-        ESP_LOGI(TAG, "hall_data.ticks_since_last_trigger: %u", hall_data.ticks_since_last_trigger);
-        ESP_LOGI(TAG, "hall_data.total_trigger_count: %u", hall_data.total_trigger_count);
-        ESP_LOGI(TAG, "hall_data.last_total_trigger_count: %u", hall_data.last_total_trigger_count);
+        ESP_LOGI(TAG, "hall_data.hall_timestamps_index: %u", hall_data->hall_timestamps_index);
+        ESP_LOGI(TAG, "hall_data.ticks_since_last_trigger: %u", hall_data->ticks_since_last_trigger);
+        ESP_LOGI(TAG, "hall_data.total_trigger_count: %u", hall_data->total_trigger_count);
+        ESP_LOGI(TAG, "hall_data.last_total_trigger_count: %u", hall_data->last_total_trigger_count);
         ESP_LOGI(TAG, "count: %d", count);
         ESP_LOGI(TAG, "dt: %f", dt);
         ESP_LOGI(TAG, "pulses_to_median: %u", pulses_to_median);
         ESP_LOGI(TAG, "trim: %d", trim);
         for (int i = 0; i < HALL_BUFFER_SIZE; i++) {
-            ESP_LOGI(TAG, "hall_timestamps[%d]: %u", i, hall_data.hall_timestamps[i]);
+            ESP_LOGI(TAG, "hall_timestamps[%d]: %u", i, hall_data->hall_timestamps[i]);
         }
         for (int i = 0; i < pulses_to_median; i++) {
             ESP_LOGI(TAG, "dt_median_array[%d]: %u", i, dt_median_array[i]);
