@@ -3,48 +3,68 @@
 #include  <stdio.h>
 #include  <math.h>
 #include  <TimerOne.h>
+#include  <TimerThree.h>
+#include  <TimerFour.h>
+#include  <PID_v1.h>
+#include  <LiquidCrystal.h>
+
+LiquidCrystal lcd(7,8,9,10,11,12);
 
 #define AIRAWMIN  0
 #define AIRAWMAX  1023
-#define PWM_MIN   63
-#define PWM_MAX   254
+#define PWM_MIN   128
+#define PWM_MAX   252
+#define PWM_MAN   188
+
+#define TIME_PERIOD 1000000
 
 struct  swerveModule {
-  int             sunENCODERwindows;
+  double          sunPV;
+  double          sunCV;
+  double          sunSP;
+  double          sunP;
+  double          sunI;
+  double          sunD;
   int             sunTACHpinINPUT;
-  unsigned  int   sunPULSEcount;
-  unsigned  long  sunPULSEtime;
-  unsigned  long  sunPULSElast;
-  unsigned  long  sunRPS;
+  int             sunPULSEcount;
   int             sunMOTORspeedREQ;
-  float           sunMOTORspeedOUT;
+  int             sunMOTORspeedOUT;
   unsigned  int   sunMOTORpinOUTPUT;
-  int             ringENCODERwindows;
+  float           sunMOTORspeedRPS;
+  double          ringPV;
+  double          ringCV;
+  double          ringSP;
+  double          ringP;
+  double          ringI;
+  double          ringD;
   int             ringTACHpinINPUT;
-  unsigned  int   ringPULSEcount;
-  unsigned  long  ringPULSEtime;
-  unsigned  long  ringPULSElast;
-  unsigned  long  ringRPS;
+  int             ringPULSEcount;
   int             ringMOTORspeedREQ;
-  float           ringMOTORspeedOUT;
+  int             ringMOTORspeedOUT;
   unsigned  int   ringMOTORpinOUTPUT;
+  float           ringMOTORspeedRPS;
 };
 
 volatile  struct  swerveModule  swMOD1;
 volatile  struct  swerveModule  swMOD2;
 
+PID mod1SUN_PID(&swMOD1.sunPV, &swMOD1.sunCV, &swMOD1.sunSP, 2.0, .2, 0, DIRECT);
+PID mod1RING_PID(&swMOD1.ringPV, &swMOD1.ringCV, &swMOD1.ringSP, swMOD1.ringP, swMOD1.ringI, swMOD1.ringD, DIRECT);
+
 int xVAL;
 int yVAL;
 int TimePulse;
 
+char  buffer[40];
+
 // This interrupt is triggered once per second
 // and causes the current tach pulse counts to
 // be converted into a RPM value
-void timerIsr()
+void timerONEisr()
 {
   Timer1.detachInterrupt();  //stop the timer
   TimePulse = 1;
-  Timer1.attachInterrupt( timerIsr );  //enable the timer
+  Timer1.attachInterrupt( timerONEisr );  //enable the timer
 }
 
 // Interrupt routine to count Mod1 Sun Motor Pulses
@@ -71,13 +91,20 @@ void setup() {
   // put your setup code here, to run once:
   //
 
+  // set up the LCD's number of columns and rows:
+  lcd.begin(16, 2);
+  // Print a message to the LCD.
+
+  // Initialize PID and place into AUTOMATIC (on) mode
+  // myPID.SetMode(AUTOMATIC);
+
   // set up the timer interrupt that triggers every 1 second (1000000 ms)
-  Timer1.initialize(1000000); // set timer for 1sec
-  Timer1.attachInterrupt( timerIsr ); // enable the timer
+  Timer1.initialize(TIME_PERIOD); // set timer for 1sec
+  Timer1.attachInterrupt( timerONEisr ); // enable the timer
 
   // Set the PWM pin assignments for sun and ring motors for each module
-  swMOD1.sunMOTORpinOUTPUT = 6;
-  swMOD1.ringMOTORpinOUTPUT = 7;
+  swMOD1.sunMOTORpinOUTPUT = 5;
+  swMOD1.ringMOTORpinOUTPUT = 6;
   swMOD2.sunMOTORpinOUTPUT = 44;
   swMOD2.ringMOTORpinOUTPUT = 45;
 
@@ -104,84 +131,88 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(swMOD1.ringTACHpinINPUT),mod1ringTACHpulse,RISING);
   attachInterrupt(digitalPinToInterrupt(swMOD2.sunTACHpinINPUT),mod2sunTACHpulse,RISING);
   attachInterrupt(digitalPinToInterrupt(swMOD2.ringTACHpinINPUT),mod2ringTACHpulse,RISING);
-  
-  // ***************************************
-  // PRE-SCALAR Adjustment for system timers
-  //
-  // Timer 1 (TCCR1B)
-  // Timer 2 (TCCR2B)
-  // Timer 3 (TCCR3B)
-  // Timer 4 (TCCR4B)
-  // Timer 5 (TCCR5B)
-  //
-  //  0x01 (0b001) = 31250.00 Hz
-  //  0x02 (0b010) =  3906.25 Hz
-  //  0x03 (0b011) =   488.28 Hz
-  //  0x04 (0b100) =   122.07 Hz
-  //  0x05 (0b101) =    30.52 Hz
-  //
-  //  Example;
-  //  change timer 2 to 122.07 Hz
-  //
-  //  TCCR2B &= 0b11111000;
-  //  TCCR2B |= 0b00000100;
-  //
-  // ***************************************
-
-  TCCR3B &= 0b11111000;
-  TCCR3B |= 0b00000011;
-
-  TCCR4B &= 0b11111000;
-  TCCR4B |= 0b00000011;
-
+ 
+  // Begin a serial communication session with the programming environment
+  // for trouble shooting purposes
   Serial.begin(9600);
 
+  swMOD1.sunPULSEcount = 0;
+  swMOD1.ringPULSEcount = 0;
+  swMOD2.sunPULSEcount = 0;
+  swMOD2.ringPULSEcount = 0;
+
+  mod1SUN_PID.SetMode(AUTOMATIC);
+  mod1RING_PID.SetMode(AUTOMATIC);
+
+  mod1SUN_PID.SetOutputLimits(PWM_MIN, PWM_MAX);
 
 }
 
 void loop() {
+
+
   // put your main code here, to run repeatedly:
 
-  xVAL = analogRead(A0);
-  yVAL = analogRead(A1);
+  xVAL = (analogRead(A0) * .1) + (xVAL * .9);
+  
+  Serial.println(xVAL);
 
+  sprintf(buffer,"%4d",xVAL);
+  lcd.setCursor(0,1);
+  lcd.print(buffer);
 
-  swMOD1.sunMOTORspeedOUT = map(xVAL,AIRAWMIN,AIRAWMAX,PWM_MIN,PWM_MAX);
-  swMOD1.ringMOTORspeedOUT = map(yVAL,AIRAWMIN,AIRAWMAX,PWM_MIN,PWM_MAX);
-  swMOD2.sunMOTORspeedOUT = map(xVAL,AIRAWMIN,AIRAWMAX,PWM_MIN,PWM_MAX);
-  swMOD2.ringMOTORspeedOUT = map(yVAL,AIRAWMIN,AIRAWMAX,PWM_MIN,PWM_MAX);
+  swMOD1.sunSP = (double)((xVAL / 1023.0) *  200.0 ) - 100.0;
+  swMOD1.ringSP = (double)((xVAL / 1023.0) * 200.0) - 100.0;
 
-
-  if (TimePulse == 1) {
-
-    // Convert the current pulse count to Rev per sec and then 
-    // calculate a new RPS which equates to 80% of the current ready plus 20% of the new reading
-    swMOD1.sunRPS = (swMOD1.sunRPS * .8) + ((swMOD1.sunPULSEcount | 3)*.2);
-    swMOD1.ringRPS = (swMOD1.ringRPS * .8) + ((swMOD1.ringPULSEcount | 3)*.2);
-    swMOD2.sunRPS = (swMOD2.sunRPS * .8) + ((swMOD2.sunPULSEcount | 3)*.2);
-    swMOD2.ringRPS = (swMOD2.ringRPS * .8) + ((swMOD2.ringPULSEcount | 3)*.2);
-
-    Serial.print("0,");
-    Serial.print(swMOD1.sunRPS);
-    Serial.print(",");
-    Serial.print(swMOD1.ringRPS);
-    Serial.print(",");
-    Serial.print(swMOD2.sunRPS);
-    Serial.print(",");
-    Serial.print(swMOD2.ringRPS);
-    Serial.println(",200");
+  swMOD1.sunPV = swMOD1.sunPULSEcount / 2;
+  swMOD1.ringPV = swMOD1.ringPULSEcount / 2;
+  
+  mod1SUN_PID.Compute();
+  mod1RING_PID.Compute();
+  
+  // Update the motor speed request from the
+  // output of the speed PID controller
+  swMOD1.sunMOTORspeedREQ = swMOD1.sunSP;
+  swMOD1.ringMOTORspeedREQ = 0;
+  swMOD2.sunMOTORspeedREQ = 0;
+  swMOD2.ringMOTORspeedREQ = 0;
 
 
 
-    // Clear the TACH pulse counts each time the Timer Interrupt triggers
+
+  //sprintf(buffer,"S:%3d C:%3d P:%3d",(int)swMOD1.sunSP, (int)swMOD1.sunCV, (int)swMOD1.sunPV);
+  //lcd.setCursor(0,1);
+  //lcd.print(buffer);
+
+
+  // Calculate the requested speed output
+  // This is based on the output from the
+  // PID controller which spans from
+  // -100 (full reverse) to 100 (full forward)
+  
+  swMOD1.sunMOTORspeedOUT = map(swMOD1.sunMOTORspeedREQ,-100,100,PWM_MIN,PWM_MAX);
+  swMOD1.ringMOTORspeedOUT = map(swMOD1.ringMOTORspeedREQ,-100,100,PWM_MIN,PWM_MAX);
+  swMOD2.sunMOTORspeedOUT = map(swMOD2.sunMOTORspeedREQ,-100,100,PWM_MIN,PWM_MAX);
+  swMOD2.ringMOTORspeedOUT = map(swMOD2.ringMOTORspeedREQ,-100,100,PWM_MIN,PWM_MAX);
+
+  if (TimePulse){
+    
+    sprintf(buffer," %3d %3d %3d %3d",swMOD1.sunPULSEcount/2,swMOD1.ringPULSEcount/2,swMOD2.sunPULSEcount/2,swMOD2.ringPULSEcount/2);
+    lcd.setCursor(0,0);
+    lcd.print(buffer);
+
     swMOD1.sunPULSEcount = 0;
     swMOD1.ringPULSEcount = 0;
     swMOD2.sunPULSEcount = 0;
     swMOD2.ringPULSEcount = 0;
     
-    TimePulse = 0;
-  }
 
+    // clear the time pulse trigger flag    
+    TimePulse = 0;
+
+  };
+
+  // update the PWM outputs for each of the modules motors
   analogWrite(swMOD1.sunMOTORpinOUTPUT,swMOD1.sunMOTORspeedOUT);
   analogWrite(swMOD1.ringMOTORpinOUTPUT,swMOD1.ringMOTORspeedOUT);
   analogWrite(swMOD2.sunMOTORpinOUTPUT,swMOD2.sunMOTORspeedOUT);
