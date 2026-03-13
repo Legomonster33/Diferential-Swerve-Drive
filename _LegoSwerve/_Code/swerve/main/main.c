@@ -49,10 +49,6 @@ bool main_isr_flag = false;
 
 motor_data_t motor_1_data = {0};
 
-pid_ctrl_block_handle_t Motor_1_pid_ctrl = NULL;
-
-mcpwm_cmpr_handle_t MOTOR_1_PWM_DUTY = NULL;
-
 //static portMUX_TYPE my_mux = portMUX_INITIALIZER_UNLOCKED; //if we want to use taskENTER_CRITICAL
 
 
@@ -85,26 +81,7 @@ static bool IRAM_ATTR timer_isr(gptimer_handle_t timer,const gptimer_alarm_event
 
 void app_main(void)
 {
-
-
-    init_pid(&Motor_1_pid_ctrl, &motor_1_config);
-    /*
-    ESP_LOGI(TAG, "Create PID control block");
-    pid_ctrl_parameter_t Motor_1_pid_runtime_param = {
-        .kp = motor_1_config.kp,
-        .ki = motor_1_config.ki,
-        .kd = motor_1_config.kd,
-        .cal_type = PID_CAL_TYPE_POSITIONAL,
-        .max_output   = MAX_SPEED/5,
-        .min_output   = MIN_SPEED/5,
-        .max_integral = 100000,
-        .min_integral = -100000,
-    };
-    pid_ctrl_config_t Motor_1_pid_config = {
-        .init_param = Motor_1_pid_runtime_param,
-    };
-    ESP_ERROR_CHECK(pid_new_control_block(&Motor_1_pid_config, &Motor_1_pid_ctrl));
-    */
+    init_pid(&motor_1_data, &motor_1_config);
 
 
     init_gptimer_200hz(&main_isr_flag);
@@ -137,9 +114,7 @@ void app_main(void)
     ESP_ERROR_CHECK(gptimer_start(gptimer_200_hz));
     */
 
-
-
-    init_capture_timer(motor_1_config.hall_pin, &motor_1_data.hall_data);
+    init_capture_timer(&motor_1_data, &motor_1_config);
     /*
     ESP_LOGI(TAG, "Install capture timer");
     mcpwm_cap_timer_handle_t cap_timer = NULL;
@@ -179,7 +154,7 @@ void app_main(void)
     */
 
 
-    init_pwm_operator(motor_1_config.pwm_pin, &MOTOR_1_PWM_DUTY);
+    init_pwm_operator(&motor_1_data, &motor_1_config);
     /*
     ESP_LOGI(TAG, "Create pwm timer and operator");
     mcpwm_timer_handle_t timer = NULL;
@@ -230,6 +205,24 @@ void app_main(void)
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer, MCPWM_TIMER_START_NO_STOP));
     */
     
+    init_pid(&motor_1_data, &motor_1_config);
+    /*
+    ESP_LOGI(TAG, "Create PID control block");
+    pid_ctrl_parameter_t Motor_1_pid_runtime_param = {
+        .kp = motor_1_config.kp,
+        .ki = motor_1_config.ki,
+        .kd = motor_1_config.kd,
+        .cal_type = PID_CAL_TYPE_POSITIONAL,
+        .max_output   = MAX_SPEED/5,
+        .min_output   = MIN_SPEED/5,
+        .max_integral = 100000,
+        .min_integral = -100000,
+    };
+    pid_ctrl_config_t Motor_1_pid_config = {
+        .init_param = Motor_1_pid_runtime_param,
+    };
+    ESP_ERROR_CHECK(pid_new_control_block(&Motor_1_pid_config, &Motor_1_pid_ctrl));
+    */
 
 
 
@@ -267,7 +260,7 @@ void app_main(void)
 
         motor_1_data.feedforward = map_target_rpm_to_speed(motor_1_data.target_rpm, motor_1_config.max_rpm, motor_1_config.min_rpm);
 
-        pid_compute(Motor_1_pid_ctrl, motor_1_data.error, &motor_1_data.pid_output);
+        pid_compute(motor_1_data.pid_ctrl, motor_1_data.error, &motor_1_data.pid_output);
 
         
 
@@ -278,7 +271,7 @@ void app_main(void)
 
 
 
-        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(motor_1_data.new_speed)));
+        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_1_data.pwm_duty, map_speed_to_pulsewidth(motor_1_data.new_speed)));
 
         
 

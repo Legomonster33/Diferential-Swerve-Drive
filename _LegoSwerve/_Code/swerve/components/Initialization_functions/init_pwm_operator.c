@@ -4,7 +4,7 @@
 
 static const char *TAG = "InitPWMOperator";
 
-void init_pwm_operator(int pwm_pin, mcpwm_cmpr_handle_t *duty_comparator) {
+void init_pwm_operator(motor_data_t *motor_data, const Motor_Config_t *motor_config) {
     ESP_LOGI(TAG, "Create PWM timer and operator");
     mcpwm_timer_handle_t timer = NULL;
     mcpwm_timer_config_t timer_config = {
@@ -29,16 +29,16 @@ void init_pwm_operator(int pwm_pin, mcpwm_cmpr_handle_t *duty_comparator) {
     mcpwm_comparator_config_t comparator_config = {
         .flags.update_cmp_on_tez = true,
     };
-    ESP_ERROR_CHECK(mcpwm_new_comparator(oper, &comparator_config, duty_comparator));
+    ESP_ERROR_CHECK(mcpwm_new_comparator(oper, &comparator_config, &motor_data->pwm_duty));
 
     mcpwm_gen_handle_t generator = NULL;
     mcpwm_generator_config_t generator_config = {
-        .gen_gpio_num = pwm_pin,
+        .gen_gpio_num = motor_config->pwm_pin,
     };
     ESP_ERROR_CHECK(mcpwm_new_generator(oper, &generator_config, &generator));
 
     // Set the initial compare value, so that the servo will spin to the center position
-    ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(*duty_comparator, map_speed_to_pulsewidth(0)));
+    ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_data->pwm_duty, map_speed_to_pulsewidth(0)));
 
     ESP_LOGI(TAG, "Set generator action on timer and compare event");
     // Go high on counter empty
@@ -46,7 +46,7 @@ void init_pwm_operator(int pwm_pin, mcpwm_cmpr_handle_t *duty_comparator) {
                                                               MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
     // Go low on compare threshold
     ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(generator,
-                                                                MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, *duty_comparator, MCPWM_GEN_ACTION_LOW)));
+                                                                MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, motor_data->pwm_duty, MCPWM_GEN_ACTION_LOW)));
 
     ESP_LOGI(TAG, "Enable and start timer");
     ESP_ERROR_CHECK(mcpwm_timer_enable(timer));

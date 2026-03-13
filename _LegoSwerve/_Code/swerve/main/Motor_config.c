@@ -1,6 +1,6 @@
 #include "motor_config.h"
 
-MotorConfig motor_1_config = {
+Motor_Config_t motor_1_config = {
     .pwm_pin = 25,
     .hall_pin = 32,
     .max_rpm = 11500,
@@ -10,7 +10,7 @@ MotorConfig motor_1_config = {
     .kd = 0.000f
 };
 
-MotorConfig motor_2_config = {
+Motor_Config_t motor_2_config = {
     .pwm_pin = 26,
     .hall_pin = 33,
     .max_rpm = 11500,

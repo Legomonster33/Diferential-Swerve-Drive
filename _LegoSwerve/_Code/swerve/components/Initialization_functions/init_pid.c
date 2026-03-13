@@ -1,12 +1,12 @@
 #include "pid_ctrl.h"
-#include "motor_config.h"
+#include "motor_data.h"
 #include "init_pid.h"
 #include "map_speed_to_pulsewidth.h"
 #include "esp_log.h"
 
 static const char *TAG = "PID_INIT";
 
-void init_pid(pid_ctrl_block_handle_t *pid_handle, const MotorConfig *motor_config) {
+void init_pid(motor_data_t *motor_data, const Motor_Config_t *motor_config) {
     ESP_LOGI(TAG, "Create PID control block");
 
     pid_ctrl_parameter_t pid_runtime_param = {
@@ -24,5 +24,5 @@ void init_pid(pid_ctrl_block_handle_t *pid_handle, const MotorConfig *motor_conf
         .init_param = pid_runtime_param,
     };
 
-    ESP_ERROR_CHECK(pid_new_control_block(&pid_config, pid_handle));
+    ESP_ERROR_CHECK(pid_new_control_block(&pid_config, &motor_data->pid_ctrl));
 }

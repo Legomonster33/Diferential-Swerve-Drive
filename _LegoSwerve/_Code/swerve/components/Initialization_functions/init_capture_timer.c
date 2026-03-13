@@ -5,7 +5,6 @@
 
 static const char *TAG = "InitCaptureTimer";
 
-
 static bool IRAM_ATTR hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcpwm_capture_event_data_t *edata, void *user_data)
 {
     hall_data_t *hall_data = (hall_data_t *)user_data;
@@ -19,8 +18,7 @@ static bool IRAM_ATTR hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan,
     return false;
 }
 
-
-void init_capture_timer(int hall_pin, hall_data_t *hall_data) {
+void init_capture_timer(motor_data_t *motor_data,Motor_Config_t *motor_config){
     ESP_LOGI(TAG, "Install capture timer");
     mcpwm_cap_timer_handle_t cap_timer = NULL;
     mcpwm_capture_timer_config_t cap_conf = {
@@ -32,7 +30,7 @@ void init_capture_timer(int hall_pin, hall_data_t *hall_data) {
     ESP_LOGI(TAG, "Install capture channel");
     mcpwm_cap_channel_handle_t cap_chan = NULL;
     mcpwm_capture_channel_config_t cap_ch_conf = {
-        .gpio_num = hall_pin,
+        .gpio_num = motor_config->hall_pin,
         .prescale = 1,
         .flags.neg_edge = false,
         .flags.pos_edge = true,
@@ -44,7 +42,7 @@ void init_capture_timer(int hall_pin, hall_data_t *hall_data) {
     mcpwm_capture_event_callbacks_t cbs = {
         .on_cap = hall_trigger_function,
     };
-    ESP_ERROR_CHECK(mcpwm_capture_channel_register_event_callbacks(cap_chan, &cbs, hall_data));
+    ESP_ERROR_CHECK(mcpwm_capture_channel_register_event_callbacks(cap_chan, &cbs, &motor_data->hall_data));
 
     ESP_LOGI(TAG, "Enable capture channel");
     ESP_ERROR_CHECK(mcpwm_capture_channel_enable(cap_chan));

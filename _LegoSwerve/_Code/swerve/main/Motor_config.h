@@ -9,9 +9,9 @@ typedef struct {
     float kp;
     float ki;
     float kd;
-} MotorConfig;
+} Motor_Config_t;
 
-extern MotorConfig motor_1_config;
-extern MotorConfig motor_2_config;
+extern Motor_Config_t motor_1_config;
+extern Motor_Config_t motor_2_config;
 
 #endif // MOTOR_CONFIG_H

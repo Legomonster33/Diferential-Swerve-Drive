@@ -15,6 +15,6 @@ dependencies:
     version: 5.5.3
 direct_dependencies:
 - espressif/pid_ctrl
-manifest_hash: c81727c4b34ecb1f2b39fe7ab5ed1ef5045cb1a4c61caa4e88b9309f7fa28da9
+manifest_hash: 0d71e8f38202a2c8a1eb33512a43c56e8fe43874b5ccafd7a2f9cec81d5920ca
 target: esp32
 version: 2.0.0
