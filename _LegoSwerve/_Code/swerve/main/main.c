@@ -19,7 +19,6 @@
 #include "esp_intr_alloc.h"
 #include "esp32/rom/ets_sys.h"
 
-
 #include "hall_data.h"
 #include "motor_data.h"
 #include "motor_config.h"
@@ -58,29 +57,25 @@ static bool IRAM_ATTR timer_isr(gptimer_handle_t timer,const gptimer_alarm_event
     return false;                            // no context switch needed
 }
 
-
-
 //ISR runs when hall sensor.
 static bool IRAM_ATTR hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan, const mcpwm_capture_event_data_t *edata, void *user_data)
 {
-    uint32_t edgetimestamp = edata->cap_value;
     hall_data_t *hall_data = (hall_data_t *)user_data;
 
     hall_data->total_trigger_count++;
 
     hall_data->hall_timestamps_index = (hall_data->hall_timestamps_index + 1) % HALL_BUFFER_SIZE;
 
-    hall_data->hall_timestamps[hall_data->hall_timestamps_index] = edgetimestamp;
+    hall_data->hall_timestamps[hall_data->hall_timestamps_index] = edata->cap_value;
 
     return false;
-            
-
 }
 
 
 
 void app_main(void)
 {
+
     ESP_LOGI(TAG, "Create PID control block");
     pid_ctrl_parameter_t Motor_1_pid_runtime_param = {
         .kp = motor_1_config.kp,
@@ -97,11 +92,6 @@ void app_main(void)
         .init_param = Motor_1_pid_runtime_param,
     };
     ESP_ERROR_CHECK(pid_new_control_block(&Motor_1_pid_config, &Motor_1_pid_ctrl));
-
-
-
-
-
 
 
 
@@ -122,7 +112,7 @@ void app_main(void)
     ESP_ERROR_CHECK(gptimer_set_alarm_action(gptimer_200_hz, &alarm_config_200_hz));
 
 
-    ESP_LOGI(TAG, "Register ISR");
+    ESP_LOGI(TAG, "Register ISR for 200hz");
     gptimer_event_callbacks_t gpt_200_hz_cbs = {
     .on_alarm = timer_isr,
     };
@@ -132,24 +122,6 @@ void app_main(void)
     ESP_LOGI(TAG, "Enable timer");
     ESP_ERROR_CHECK(gptimer_enable(gptimer_200_hz));
     ESP_ERROR_CHECK(gptimer_start(gptimer_200_hz));
-
-
-    
-    /*
-    ESP_LOGI(TAG, "Create gptimer for timestamping");
-    gptimer_config_t gp_timer_config_timestamping = {
-        .clk_src = GPTIMER_CLK_SRC_DEFAULT,
-        .direction = GPTIMER_COUNT_UP,
-        .resolution_hz = 1000000, // 1MHz, 1 tick=1us
-    };
-    ESP_ERROR_CHECK(gptimer_new_timer(&gp_timer_config_timestamping, &gptimer_timestamping));
-
-
-    ESP_LOGI(TAG, "Enable timer");
-    ESP_ERROR_CHECK(gptimer_enable(gptimer_timestamping));
-    ESP_ERROR_CHECK(gptimer_start(gptimer_timestamping));
-    */
-
 
 
 

@@ -1,3 +1,6 @@
-idf_component_register(SRCS "update_rpm.c" "Motor_config.c" "map_target_rpm_to_speed.c" "map_speed_to_pulsewidth.c" "calculate_rpm.c" "main.c"
-                       PRIV_REQUIRES esp_driver_mcpwm esp_driver_gpio esp_driver_gptimer
-                       INCLUDE_DIRS ".")
+idf_component_register(
+    SRCS "main.c"
+    INCLUDE_DIRS "."
+    PRIV_REQUIRES esp_driver_mcpwm esp_driver_gpio esp_driver_gptimer
+    REQUIRES functions data_types
+)
