@@ -24,6 +24,7 @@
 #include "motor_config.h"
 
 #include "update_rpm.h"
+#include "update_pid_feedforward.h"
 #include "calculate_rpm.h"
 #include "map_speed_to_pulsewidth.h"
 #include "map_target_rpm_to_speed.h"
@@ -242,12 +243,9 @@ void app_main(void)
     motor_1_data.rpm = 0;
 
     while (1) {
-        vTaskDelay(1); //let idle task run, otherwise wdtd triggers
+        vTaskDelay(1); //let idle task run, otherwise watchdog triggers
 
         
-        
-        
-
 
         if (main_isr_flag){
         
@@ -255,21 +253,19 @@ void app_main(void)
         update_rpm(&motor_1_data);
         
 
+        update_pid_feedforward(&motor_1_data, &motor_1_config);
 
+        /*
         motor_1_data.error = (motor_1_data.target_rpm - motor_1_data.rpm);
 
         motor_1_data.feedforward = map_target_rpm_to_speed(motor_1_data.target_rpm, motor_1_config.max_rpm, motor_1_config.min_rpm);
 
         pid_compute(motor_1_data.pid_ctrl, motor_1_data.error, &motor_1_data.pid_output);
-
+        */
         
-
-
         motor_1_data.new_speed = motor_1_data.feedforward + motor_1_data.pid_output;
 
         //motor_1_data.new_speed = 500; // for testing
-
-
 
         ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_1_data.pwm_duty, map_speed_to_pulsewidth(motor_1_data.new_speed)));
 
