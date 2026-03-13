@@ -2,6 +2,7 @@
 #define MOTOR_CONFIG_H
 
 typedef struct {
+    int capture_group_id;
     int pwm_pin;
     int hall_pin;
     int max_rpm;

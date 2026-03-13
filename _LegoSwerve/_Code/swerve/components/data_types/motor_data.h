@@ -10,7 +10,7 @@
 typedef struct {
     hall_data_t hall_data;
     pid_ctrl_block_handle_t pid_ctrl;
-    mcpwm_cmpr_handle_t pwm_duty;
+    mcpwm_cmpr_handle_t pwm_comparator;
     float rpm;
     float target_rpm;
     float error;

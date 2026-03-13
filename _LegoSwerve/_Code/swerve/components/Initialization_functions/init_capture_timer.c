@@ -18,12 +18,13 @@ static bool IRAM_ATTR hall_trigger_function(mcpwm_cap_channel_handle_t cap_chan,
     return false;
 }
 
-void init_capture_timer(motor_data_t *motor_data,Motor_Config_t *motor_config){
+void init_capture_timer(motor_data_t *motor_data, Motor_Config_t *motor_config)
+{
     ESP_LOGI(TAG, "Install capture timer");
     mcpwm_cap_timer_handle_t cap_timer = NULL;
     mcpwm_capture_timer_config_t cap_conf = {
         .clk_src = MCPWM_CAPTURE_CLK_SRC_APB,
-        .group_id = 0,
+        .group_id = motor_config->capture_group_id, // Use group_id from motor_config
     };
     ESP_ERROR_CHECK(mcpwm_new_capture_timer(&cap_conf, &cap_timer));
 

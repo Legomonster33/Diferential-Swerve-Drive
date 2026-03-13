@@ -49,6 +49,7 @@
 bool main_isr_flag = false;
 
 motor_data_t motor_1_data = {0};
+motor_data_t motor_2_data = {0};
 
 //static portMUX_TYPE my_mux = portMUX_INITIALIZER_UNLOCKED; //if we want to use taskENTER_CRITICAL
 
@@ -82,155 +83,25 @@ static bool IRAM_ATTR timer_isr(gptimer_handle_t timer,const gptimer_alarm_event
 
 void app_main(void)
 {
-    init_pid(&motor_1_data, &motor_1_config);
+    
 
 
     init_gptimer_200hz(&main_isr_flag);
-    /*   ESP_LOGI(TAG, "Create gptimer for 200hz");
-    gptimer_config_t gp_timer_config_200hz = {
-        .clk_src = GPTIMER_CLK_SRC_DEFAULT,
-        .direction = GPTIMER_COUNT_UP,
-        .resolution_hz = 1000000, // 1MHz, 1 tick=1us
-    };
-    ESP_ERROR_CHECK(gptimer_new_timer(&gp_timer_config_200hz, &gptimer_200_hz));
-
-    
-    gptimer_alarm_config_t alarm_config_200_hz = {
-    .alarm_count = 5000,                    // 200 Hz → 5000 ticks at 1 MHz
-    .reload_count = 0,                   // must be >0 if auto_reload is enabled
-    .flags.auto_reload_on_alarm = true,
-    };
-    ESP_ERROR_CHECK(gptimer_set_alarm_action(gptimer_200_hz, &alarm_config_200_hz));
-
-
-    ESP_LOGI(TAG, "Register ISR for 200hz");
-    gptimer_event_callbacks_t gpt_200_hz_cbs = {
-    .on_alarm = timer_isr,
-    };
-    ESP_ERROR_CHECK(gptimer_register_event_callbacks(gptimer_200_hz, &gpt_200_hz_cbs, NULL));  // user_ctx optional
-
-    
-    ESP_LOGI(TAG, "Enable timer");
-    ESP_ERROR_CHECK(gptimer_enable(gptimer_200_hz));
-    ESP_ERROR_CHECK(gptimer_start(gptimer_200_hz));
-    */
-
-    init_capture_timer(&motor_1_data, &motor_1_config);
-    /*
-    ESP_LOGI(TAG, "Install capture timer");
-    mcpwm_cap_timer_handle_t cap_timer = NULL;
-    mcpwm_capture_timer_config_t cap_conf = {
-        .clk_src = MCPWM_CAPTURE_CLK_SRC_APB,
-        .group_id = 0,
-    };
-    ESP_ERROR_CHECK(mcpwm_new_capture_timer(&cap_conf, &cap_timer));
-
-    ESP_LOGI(TAG, "Install capture channel");
-    mcpwm_cap_channel_handle_t cap_chan = NULL;
-    mcpwm_capture_channel_config_t cap_ch_conf = {
-        .gpio_num = motor_1_config.hall_pin,
-        .prescale = 1,
-        // capture on both edge
-        .flags.neg_edge = false,
-        .flags.pos_edge = true,
-        // pull up internally
-        .flags.pull_up = true,
-    };
-    ESP_ERROR_CHECK(mcpwm_new_capture_channel(cap_timer, &cap_ch_conf, &cap_chan));
-
-    ESP_LOGI(TAG, "Register capture callback");
-
-    mcpwm_capture_event_callbacks_t cbs = {
-        .on_cap = hall_trigger_function,
-    };
-
-    ESP_ERROR_CHECK(mcpwm_capture_channel_register_event_callbacks(cap_chan, &cbs, &motor_1_data.hall_data));
-
-    ESP_LOGI(TAG, "Enable capture channel");
-    ESP_ERROR_CHECK(mcpwm_capture_channel_enable(cap_chan));
-
-    ESP_LOGI(TAG, "Enable and start capture timer");
-    ESP_ERROR_CHECK(mcpwm_capture_timer_enable(cap_timer));
-    ESP_ERROR_CHECK(mcpwm_capture_timer_start(cap_timer));
-    */
 
 
     init_pwm_operator(&motor_1_data, &motor_1_config);
-    /*
-    ESP_LOGI(TAG, "Create pwm timer and operator");
-    mcpwm_timer_handle_t timer = NULL;
-    mcpwm_timer_config_t timer_config = {
-        .group_id = 0,
-        .clk_src = MCPWM_TIMER_CLK_SRC_DEFAULT,
-        .resolution_hz = TIMEBASE_RESOLUTION_HZ,
-        .period_ticks = SERVO_TIMEBASE_PERIOD,
-        .count_mode = MCPWM_TIMER_COUNT_MODE_UP,
-    };
-    ESP_ERROR_CHECK(mcpwm_new_timer(&timer_config, &timer));
+    init_pwm_operator(&motor_2_data, &motor_2_config);
 
-    mcpwm_oper_handle_t oper = NULL;
-    mcpwm_operator_config_t operator_config = {
-        .group_id = 0, // operator must be in the same group to the timer
-    };
-    ESP_ERROR_CHECK(mcpwm_new_operator(&operator_config, &oper));
+    init_capture_timer(&motor_1_data, &motor_1_config);
+    init_capture_timer(&motor_2_data, &motor_2_config); 
 
-    ESP_LOGI(TAG, "Connect timer and operator");
-    ESP_ERROR_CHECK(mcpwm_operator_connect_timer(oper, timer));
-
-    ESP_LOGI(TAG, "Create MOTOR_1_PWM_DUTY and generator from the operator");
-
-    mcpwm_comparator_config_t comparator_config = {
-        .flags.update_cmp_on_tez = true,
-    };
-    ESP_ERROR_CHECK(mcpwm_new_comparator(oper, &comparator_config, &MOTOR_1_PWM_DUTY));
-
-    mcpwm_gen_handle_t generator = NULL;
-    mcpwm_generator_config_t generator_config = {
-        .gen_gpio_num = motor_1_config.pwm_pin,
-    };
-    ESP_ERROR_CHECK(mcpwm_new_generator(oper, &generator_config, &generator));
-
-    // set the initial compare value, so that the servo will spin to the center position
-    ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(MOTOR_1_PWM_DUTY, map_speed_to_pulsewidth(0)));
-
-    ESP_LOGI(TAG, "Set generator action on timer and compare event");
-    // go high on counter empty
-    ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(generator,
-                                                              MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
-    // go low on compare threshold
-    ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(generator,
-                                                                MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MOTOR_1_PWM_DUTY, MCPWM_GEN_ACTION_LOW)));
-
-    ESP_LOGI(TAG, "Enable and start timer");
-    ESP_ERROR_CHECK(mcpwm_timer_enable(timer));
-    ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer, MCPWM_TIMER_START_NO_STOP));
-    */
-    
     init_pid(&motor_1_data, &motor_1_config);
-    /*
-    ESP_LOGI(TAG, "Create PID control block");
-    pid_ctrl_parameter_t Motor_1_pid_runtime_param = {
-        .kp = motor_1_config.kp,
-        .ki = motor_1_config.ki,
-        .kd = motor_1_config.kd,
-        .cal_type = PID_CAL_TYPE_POSITIONAL,
-        .max_output   = MAX_SPEED/5,
-        .min_output   = MIN_SPEED/5,
-        .max_integral = 100000,
-        .min_integral = -100000,
-    };
-    pid_ctrl_config_t Motor_1_pid_config = {
-        .init_param = Motor_1_pid_runtime_param,
-    };
-    ESP_ERROR_CHECK(pid_new_control_block(&Motor_1_pid_config, &Motor_1_pid_ctrl));
-    */
+    init_pid(&motor_2_data, &motor_2_config);
 
 
 
 
 
-
-    int loopcount = 0;
 
     int speed_pause = 0;
 
@@ -239,8 +110,11 @@ void app_main(void)
     float step_dir = 20; // positive for increasing speed, negative for decreasing
     float step_size = 20; // to increase step size after each full cycle
 
-    motor_1_data.target_rpm = 0;
+    motor_1_data.target_rpm = 5000;
+    motor_2_data.target_rpm = 5000;
+
     motor_1_data.rpm = 0;
+    motor_2_data.rpm = 0;
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise watchdog triggers
@@ -249,32 +123,24 @@ void app_main(void)
 
         if (main_isr_flag){
         
-
         update_rpm(&motor_1_data);
+        update_rpm(&motor_2_data);
         
-
         update_pid_feedforward(&motor_1_data, &motor_1_config);
+        update_pid_feedforward(&motor_2_data, &motor_2_config);
 
-        /*
-        motor_1_data.error = (motor_1_data.target_rpm - motor_1_data.rpm);
-
-        motor_1_data.feedforward = map_target_rpm_to_speed(motor_1_data.target_rpm, motor_1_config.max_rpm, motor_1_config.min_rpm);
-
-        pid_compute(motor_1_data.pid_ctrl, motor_1_data.error, &motor_1_data.pid_output);
-        */
-        
         motor_1_data.new_speed = motor_1_data.feedforward + motor_1_data.pid_output;
+        motor_2_data.new_speed = motor_2_data.feedforward + motor_2_data.pid_output;
 
-        //motor_1_data.new_speed = 500; // for testing
-
-        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_1_data.pwm_duty, map_speed_to_pulsewidth(motor_1_data.new_speed)));
+        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_1_data.pwm_comparator, map_speed_to_pulsewidth(motor_1_data.new_speed)));
+        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_2_data.pwm_comparator, map_speed_to_pulsewidth(motor_2_data.new_speed)));
 
         
 
         
         // Adjust speed
 
-        
+        /*
         if (speed_pause > 0) {
             speed_pause--;
             }else {
@@ -301,34 +167,14 @@ void app_main(void)
                 }
                 
             }
-        
-        
-        
-        
-        printf("/*%.1f, %.1f, %.1f, %.1f, %.1f, %.1f*/\r\n", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed, motor_1_data.pid_output,motor_1_data.feedforward,motor_1_data.error);
-
-        
-        if (loopcount % 200== 0) { 
-
-            
-            //for (int i = 0; i < 64; i++) {
-            //    ESP_LOGI(TAG, "Hall timestamp[%d]: %u ticks",i,Hall_1_local_copy.hall_timestamps[i]);}
-                  
-            //ESP_LOGI(TAG, "Total hall triggers: %u", Hall_1_local_copy.total_trigger_count);
-            //ESP_LOGI(TAG, "Current mode: %d", hall_1_data.mode);
-            
-            //ESP_LOGI(TAG, "Speed: %f", motor_1_data.new_speed);
-            //ESP_LOGI(TAG, "Error: %f", motor_1_data.error);
-
-            //ESP_LOGI(TAG, "Calculated RPM: %f", motor_1_data.rpm);
-            //ESP_LOGI(TAG, "Target RPM: %f", motor_1_data.target_rpm);
-
-            //ESP_LOGI(TAG, "Last isr timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_isr_timestamp);
-            //ESP_LOGI(TAG, "Last update timestamp: %llu ticks", Hall_1_local_copy.gptimer_last_update_timestamp);
-        }
+        */
         
 
-        loopcount++;
+        printf("/*%.1f, %.1f, %.1f, %.1f, %.1f, %.1f,", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed, motor_1_data.pid_output,motor_1_data.feedforward,motor_1_data.error);
+        printf("%.1f, %.1f, %.1f, %.1f, %.1f, %.1f*/\r\n", motor_2_data.rpm, motor_2_data.target_rpm, motor_2_data.new_speed, motor_2_data.pid_output,motor_2_data.feedforward,motor_2_data.error);
+        
+
+        
         
         main_isr_flag = false;
     
