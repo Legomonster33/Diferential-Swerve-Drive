@@ -66,6 +66,8 @@ void app_main(void)
     uint32_t loop_counter = 0;
 
     wheel_data.target_wheel_rpm = 3000; // to be set by the orchestrator.
+    wheel_data.current_angle = 0; // to be read from the sensors.
+    wheel_data.target_angle = 0; // to be set by the orchestrator.
 
 
     
@@ -82,14 +84,19 @@ void app_main(void)
                 loop_counter = 0;
 
                 //read_sensor_data(&wheel_data.current_angle);
+                if (wheel_data.current_angle < 360) {
+                    wheel_data.current_angle++;
+                } else {
+                    wheel_data.current_angle = 0;
+                }
 
                 wheel_data.target_motor_rpm = wheel_data.target_wheel_rpm * wheel_config.wheel_rpm_ratio;
                 
-                wheel_data.angle_error = wheel_data.target_angle - wheel_data.angle_error;
+                wheel_data.angle_error = wheel_data.current_angle - wheel_data.target_angle;
 
-                //update_wheel_pid(&wheel_data);
+    
+                pid_compute(wheel_data.pid_ctrl, wheel_data.angle_error, &wheel_data.motor_rpm_differential);
 
-                wheel_data.motor_rpm_differential = 500;
                 
                 motor_1_data.target_rpm = wheel_data.target_motor_rpm + wheel_data.motor_rpm_differential;
                 motor_2_data.target_rpm = wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
@@ -134,8 +141,8 @@ void app_main(void)
             ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_2_data.pwm_comparator, map_speed_to_pulsewidth(motor_2_data.new_speed)));
 
             printf("/*%.0f,%.0f,%.0f,%.0f,", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed,motor_1_data.error);
-            printf("%.0f,%.0f,%.0f,%.0f*/\r\n", motor_2_data.rpm, motor_2_data.target_rpm, motor_2_data.new_speed,motor_2_data.error);
-            
+            printf("%.0f,%.0f,%.0f,%.0f,", motor_2_data.rpm, motor_2_data.target_rpm, motor_2_data.new_speed,motor_2_data.error);
+            printf("%.0f,%.0f,%.0f,%.0f*/\n", wheel_data.current_angle, wheel_data.target_angle, wheel_data.angle_error, wheel_data.motor_rpm_differential);
 
             
             
