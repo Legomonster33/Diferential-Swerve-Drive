@@ -39,6 +39,12 @@ wheel_data_t wheel_data = {0};
 //static portMUX_TYPE my_mux = portMUX_INITIALIZER_UNLOCKED; //if we want to use taskENTER_CRITICAL
 
 
+static inline int wrap_to_2048(int x)
+{
+    while (x > 2048)  x -= 4096;
+    while (x < -2048) x += 4096;
+    return x;
+}
 
 
 void app_main(void)
@@ -65,10 +71,9 @@ void app_main(void)
 
     uint32_t loop_counter = 0;
 
-    wheel_data.target_wheel_rpm = 3000; // to be set by the orchestrator.
-    wheel_data.current_angle = 0; // to be read from the sensors.
+    wheel_data.current_angle = 0; // to be read from the sensor.
     wheel_data.target_angle = 0; // to be set by the orchestrator.
-
+    wheel_data.target_wheel_rpm = 3000; // set by orchestrator.
 
     
 
@@ -84,42 +89,49 @@ void app_main(void)
                 loop_counter = 0;
 
                 //read_sensor_data(&wheel_data.current_angle);
-                if (wheel_data.current_angle < 360) {
+                if (wheel_data.current_angle < 360) { // fake sensor data, it just loops.
                     wheel_data.current_angle++;
                 } else {
                     wheel_data.current_angle = 0;
                 }
 
-                wheel_data.target_motor_rpm = wheel_data.target_wheel_rpm * wheel_config.wheel_rpm_ratio;
-                
-                wheel_data.angle_error = wheel_data.current_angle - wheel_data.target_angle;
 
-    
+                wheel_data.target_motor_rpm = wheel_data.target_wheel_rpm * wheel_config.wheel_rpm_ratio;
+
+                /* compute shortest angular error */
+                int delta = wrap_to_2048(wheel_data.target_angle - wheel_data.current_angle);
+
+                /* swerve optimization: flip wheel if >90° */
+                if (abs(delta) > 1024) {
+
+                    wheel_data.target_wheel_rpm = -wheel_data.target_wheel_rpm;
+                    wheel_data.target_motor_rpm = -wheel_data.target_motor_rpm;
+
+                    wheel_data.target_angle = (wheel_data.target_angle + 2048) & 0xFFF; // wrap 0-4095
+
+                    delta = wrap_to_2048(wheel_data.target_angle - wheel_data.current_angle);
+                }
+
+                /* PID uses shortest path error */
+                wheel_data.angle_error = delta;
+
                 pid_compute(wheel_data.pid_ctrl, wheel_data.angle_error, &wheel_data.motor_rpm_differential);
 
-                
                 motor_1_data.target_rpm = wheel_data.target_motor_rpm + wheel_data.motor_rpm_differential;
                 motor_2_data.target_rpm = wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
 
             }
 
 
-
-
-
-
-            // Adjust speed
-
-            
-
             /*
             if (speed_pause > 0) {
                 speed_pause--;
                 }else {
                     
-                    motor_1_data.target_rpm = rand() % (motor_1_config.max_rpm - motor_1_config.min_rpm) + motor_1_config.min_rpm; //random target rpm between min_rpm and max_rpm
-                    motor_2_data.target_rpm = rand() % (motor_2_config.max_rpm - motor_2_config.min_rpm) + motor_2_config.min_rpm; //random target rpm between min_rpm and max_rpm
-
+                    wheel_data.target_wheel_rpm += 500;
+                    if (wheel_data.target_wheel_rpm > 3000) {
+                        wheel_data.target_wheel_rpm = 0;
+                    }
                     speed_pause = 1000;
                 }
             */

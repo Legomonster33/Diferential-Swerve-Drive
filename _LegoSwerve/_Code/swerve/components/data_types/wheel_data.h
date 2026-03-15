@@ -8,8 +8,8 @@ typedef struct {
     pid_ctrl_block_handle_t pid_ctrl;
     float target_wheel_rpm;
     float target_motor_rpm;
-    float target_angle;
-    float current_angle;
+    int target_angle;
+    int current_angle;
     float angle_error;
     float motor_rpm_differential;
     
