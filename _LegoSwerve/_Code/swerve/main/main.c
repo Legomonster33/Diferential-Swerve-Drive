@@ -147,22 +147,8 @@ void app_main(void){
 
                 wheel_data.target_motor_rpm = wheel_data.target_wheel_rpm * wheel_config.wheel_rpm_ratio;
 
-                /* compute shortest angular error */
-                int delta = wrap_to_2048(wheel_data.target_angle - wheel_data.current_angle);
 
-                /* swerve optimization: flip wheel if >90° */
-                if (abs(delta) > 1024) {
-
-                    wheel_data.target_wheel_rpm = -wheel_data.target_wheel_rpm;
-                    wheel_data.target_motor_rpm = -wheel_data.target_motor_rpm;
-
-                    wheel_data.target_angle = (wheel_data.target_angle + 2048) & 0xFFF; // wrap 0-4095
-
-                    delta = wrap_to_2048(wheel_data.target_angle - wheel_data.current_angle);
-                }
-
-                /* PID uses shortest path error */
-                wheel_data.angle_error = delta;
+                wheel_data.angle_error = wrap_to_2048(wheel_data.target_angle - wheel_data.current_angle);
 
                 pid_compute(wheel_data.pid_ctrl, wheel_data.angle_error, &wheel_data.motor_rpm_differential);
 
