@@ -1,20 +1,6 @@
 {
     "actions": [
     ],
-    "checksum": "",
-    "dashboardLayout": {
-        "autoLayout": true,
-        "windowOrder": [
-            0,
-            1,
-            2
-        ]
-    },
-    "decoder": 0,
-    "frameDetection": 1,
-    "frameEnd": "*/",
-    "frameParser": "function parse(frame) {\n    return frame.split(',');\n}",
-    "frameStart": "/*",
     "groups": [
         {
             "datasets": [
@@ -230,5 +216,40 @@
         }
     ],
     "hexadecimalDelimiters": false,
-    "title": "Denso Speed"
+    "pointCount": 100,
+    "sources": [
+        {
+            "busType": 0,
+            "checksum": "",
+            "checksumAlgorithm": "",
+            "connection": {
+                "autoReconnect": false,
+                "baudRate": 10,
+                "dataBitsIndex": 3,
+                "dtr": true,
+                "flowControlIndex": 0,
+                "parityIndex": 0,
+                "portIndex": 0,
+                "stopBitsIndex": 0
+            },
+            "decoder": 0,
+            "decoderMethod": 0,
+            "frameDetection": 1,
+            "frameEnd": "*/",
+            "frameParserCode": "function parse(frame) {\n    return frame.split(',');\n}",
+            "frameStart": "/*",
+            "hexadecimalDelimiters": false,
+            "sourceId": 0,
+            "title": "Device A"
+        }
+    ],
+    "title": "Denso Speed",
+    "widgetSettings": {
+        "2:0:-1": {
+            "visibleCurves": null
+        },
+        "2:1:-1": {
+            "visibleCurves": null
+        }
+    }
 }

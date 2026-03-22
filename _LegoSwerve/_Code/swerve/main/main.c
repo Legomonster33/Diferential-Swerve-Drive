@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/mcpwm_prelude.h"
@@ -10,6 +11,7 @@
 #include "pid_ctrl.h"
 #include <math.h>
 #include "esp_system.h"
+#include "driver/i2c_master.h"
 
 #include "hall_data.h"
 #include "motor_data.h"
@@ -39,17 +41,56 @@ wheel_data_t wheel_data = {0};
 //static portMUX_TYPE my_mux = portMUX_INITIALIZER_UNLOCKED; //if we want to use taskENTER_CRITICAL
 
 
-static inline int wrap_to_2048(int x)
-{
+static inline int wrap_to_2048(int x){
     while (x > 2048)  x -= 4096;
     while (x < -2048) x += 4096;
     return x;
 }
 
 
-void app_main(void)
+#define I2C_MASTER_SCL_IO           22       /*!< GPIO number used for I2C master clock */
+#define I2C_MASTER_SDA_IO           21       /*!< GPIO number used for I2C master data  */
+#define I2C_MASTER_NUM              I2C_NUM_0                   /*!< I2C port number for master dev */
+#define I2C_MASTER_FREQ_HZ          CONFIG_I2C_MASTER_FREQUENCY /*!< I2C master clock frequency */
+#define I2C_MASTER_TX_BUF_DISABLE   0                           /*!< I2C master doesn't need buffer */
+#define I2C_MASTER_RX_BUF_DISABLE   0                           /*!< I2C master doesn't need buffer */
+#define I2C_MASTER_TIMEOUT_MS       1000
+
+
+
+
+static void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_handle_t *dev_handle)
 {
-    
+    i2c_master_bus_config_t bus_config = {
+        .i2c_port = I2C_MASTER_NUM,
+        .sda_io_num = I2C_MASTER_SDA_IO,
+        .scl_io_num = I2C_MASTER_SCL_IO,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = true,
+    };
+    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, bus_handle));
+
+    i2c_device_config_t dev_config = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = 0x36,
+        .scl_speed_hz = I2C_MASTER_FREQ_HZ,
+    };
+    ESP_ERROR_CHECK(i2c_master_bus_add_device(*bus_handle, &dev_config, dev_handle));
+}
+
+i2c_master_bus_handle_t i2c_bus_handle;
+i2c_master_dev_handle_t i2c_dev_handle;
+
+
+void app_main(void){
+
+    i2c_master_init(&i2c_bus_handle, &i2c_dev_handle);
+
+
+
+
+
     init_gptimer_200hz(&main_isr_flag);
 
     init_pwm_operator(&motor_1_data, &motor_1_config);
@@ -75,7 +116,11 @@ void app_main(void)
     wheel_data.target_angle = 0; // to be set by the orchestrator.
     wheel_data.target_wheel_rpm = 3000; // set by orchestrator.
 
-    
+
+    uint8_t raw_angle_low_byte;
+    uint8_t raw_angle_high_byte;
+    uint8_t raw_angle_low_byte_address = 0x0D;
+    uint8_t raw_angle_high_byte_address = 0x0C;
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise watchdog triggers
@@ -85,16 +130,20 @@ void app_main(void)
         if (main_isr_flag){
             loop_counter ++;
 
+
+            
+
+            
+
+
             if (loop_counter == 10){ //runs at 20hz
                 loop_counter = 0;
 
-                //read_sensor_data(&wheel_data.current_angle);
-                if (wheel_data.current_angle < 360) { // fake sensor data, it just loops.
-                    wheel_data.current_angle++;
-                } else {
-                    wheel_data.current_angle = 0;
-                }
+                i2c_master_transmit_receive(i2c_dev_handle,&raw_angle_low_byte_address,1,&raw_angle_low_byte,1,I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+                i2c_master_transmit_receive(i2c_dev_handle,&raw_angle_high_byte_address,1,&raw_angle_high_byte,1,I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+                wheel_data.current_angle = (raw_angle_high_byte << 8) | raw_angle_low_byte;
 
+                //printf("angle: %f\n", wheel_data.current_angle/4096.0f*360.0f);
 
                 wheel_data.target_motor_rpm = wheel_data.target_wheel_rpm * wheel_config.wheel_rpm_ratio;
 
@@ -151,11 +200,13 @@ void app_main(void)
 
             ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_1_data.pwm_comparator, map_speed_to_pulsewidth(motor_1_data.new_speed)));
             ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_2_data.pwm_comparator, map_speed_to_pulsewidth(motor_2_data.new_speed)));
-
+            
+            
             printf("/*%.0f,%.0f,%.0f,%.0f,", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed,motor_1_data.error);
             printf("%.0f,%.0f,%.0f,%.0f,", motor_2_data.rpm, motor_2_data.target_rpm, motor_2_data.new_speed,motor_2_data.error);
-            printf("%.0f,%.0f,%.0f,%.0f*/\n", wheel_data.current_angle, wheel_data.target_angle, wheel_data.angle_error, wheel_data.motor_rpm_differential);
-
+            printf("%.0d,%.0d,%.0f,%.0f*/\n", wheel_data.current_angle, wheel_data.target_angle, wheel_data.angle_error, wheel_data.motor_rpm_differential);
+            
+            
             
             
             main_isr_flag = false;
