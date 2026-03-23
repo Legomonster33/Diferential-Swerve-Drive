@@ -12,6 +12,7 @@
 #include <math.h>
 #include "esp_system.h"
 #include "driver/i2c_master.h"
+#include "driver/gpio.h"
 
 #include "hall_data.h"
 #include "motor_data.h"
@@ -56,7 +57,8 @@ static inline int wrap_to_2048(int x){
 #define I2C_MASTER_RX_BUF_DISABLE   0                           /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_TIMEOUT_MS       1000
 
-
+#define BUTTON_1_GPIO_NUM 16
+#define BUTTON_2_GPIO_NUM 17
 
 
 static void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_handle_t *dev_handle)
@@ -89,6 +91,17 @@ void app_main(void){
 
 
 
+
+
+
+    gpio_config_t io_conf = {
+        .intr_type = GPIO_INTR_DISABLE,
+        .mode = GPIO_MODE_INPUT,
+        .pin_bit_mask = (1ULL << BUTTON_1_GPIO_NUM) | (1ULL << BUTTON_2_GPIO_NUM),
+        .pull_down_en = 0,
+        .pull_up_en = 1
+    };
+    gpio_config(&io_conf);
 
 
     init_gptimer_200hz(&main_isr_flag);
@@ -138,6 +151,13 @@ void app_main(void){
 
             if (loop_counter == 10){ //runs at 20hz
                 loop_counter = 0;
+
+                if (gpio_get_level(BUTTON_1_GPIO_NUM) == 1) {
+                    wheel_data.target_angle += 1;
+                }
+                if (gpio_get_level(BUTTON_2_GPIO_NUM) == 1) {
+                    wheel_data.target_angle -= 1;
+                }
 
                 i2c_master_transmit_receive(i2c_dev_handle,&raw_angle_low_byte_address,1,&raw_angle_low_byte,1,I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
                 i2c_master_transmit_receive(i2c_dev_handle,&raw_angle_high_byte_address,1,&raw_angle_high_byte,1,I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);

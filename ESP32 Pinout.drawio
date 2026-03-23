@@ -535,14 +535,11 @@
         <mxCell id="5_z1-Tb_A7Iwx3X07vql-145" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#FF0000;fillColor=#FFFF00;align=center;verticalAlign=middle;rounded=0;fontSize=10;" value="&lt;font style=&quot;color: rgb(0, 0, 0);&quot;&gt;MUST BE LOW DURING BOOT, CONNECTED TO ON_BOARD LED&lt;/font&gt;" vertex="1">
           <mxGeometry height="20" width="201" x="559" y="670" as="geometry" />
         </mxCell>
-        <mxCell id="5_z1-Tb_A7Iwx3X07vql-146" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=10;spacing=0;" value="STATUS LED - RED" vertex="1">
+        <mxCell id="5_z1-Tb_A7Iwx3X07vql-146" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=10;spacing=0;" value="BUTTON 1" vertex="1">
           <mxGeometry height="10" width="190" x="560" y="554.43" as="geometry" />
         </mxCell>
-        <mxCell id="5_z1-Tb_A7Iwx3X07vql-147" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=10;spacing=0;" value="STATUS LED - GREEN" vertex="1">
+        <mxCell id="5_z1-Tb_A7Iwx3X07vql-147" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=10;spacing=0;" value="BUTTON 2" vertex="1">
           <mxGeometry height="10" width="190" x="560" y="593.63" as="geometry" />
-        </mxCell>
-        <mxCell id="5_z1-Tb_A7Iwx3X07vql-148" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=10;spacing=0;" value="STATUS LED - BLUE" vertex="1">
-          <mxGeometry height="10" width="190" x="559" y="633.63" as="geometry" />
         </mxCell>
         <mxCell id="s4XfXdhlLAv_4zr9e9yu-3" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
