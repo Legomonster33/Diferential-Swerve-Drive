@@ -5,14 +5,14 @@
 
 static const char *TAG = "PID_INIT";
 
-void init_pid(pid_ctrl_block_handle_t *pid_ctrl, float kp, float ki, float kd, float max_output, float min_output) {
+void init_pid(pid_ctrl_block_handle_t *pid_ctrl, float kp, float ki, float kd, float max_output, float min_output, pid_calculate_type_t cal_type) {
     ESP_LOGI(TAG, "Create PID control block");
 
     pid_ctrl_parameter_t pid_runtime_param = {
         .kp = kp,
         .ki = ki,
         .kd = kd,
-        .cal_type = PID_CAL_TYPE_POSITIONAL,
+        .cal_type = cal_type,
         .max_output = max_output,
         .min_output = min_output,
         .max_integral = 100000,
