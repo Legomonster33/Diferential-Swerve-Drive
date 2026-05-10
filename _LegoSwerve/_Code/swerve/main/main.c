@@ -87,7 +87,7 @@ void app_main(void){
     init_pid(&motor_1_data.pid_ctrl, motor_1_config.kp, motor_1_config.ki, motor_1_config.kd, MAX_SPEED / 5, MIN_SPEED / 5, PID_CAL_TYPE_INCREMENTAL);
     init_pid(&motor_2_data.pid_ctrl, motor_2_config.kp, motor_2_config.ki, motor_2_config.kd, MAX_SPEED / 5, MIN_SPEED / 5, PID_CAL_TYPE_INCREMENTAL);
 
-    init_pid(&wheel_data.pid_ctrl, wheel_config.kp, wheel_config.ki, wheel_config.kd, wheel_config.max_rpm, wheel_config.min_rpm, PID_CAL_TYPE_POSITIONAL);
+    init_pid(&wheel_data.pid_ctrl, wheel_config.kp, wheel_config.ki, wheel_config.kd, wheel_config.max_rpm, wheel_config.min_rpm, PID_CAL_TYPE_INCREMENTAL);
 
     motor_1_data.target_rpm = 0;
     motor_2_data.target_rpm = 0;
@@ -97,10 +97,11 @@ void app_main(void){
 
     uint32_t loop_counter_20hz = 0;
     uint32_t loop_counter_1hz = 0;
+    uint32_t loop_counter_randtarget = 0;
 
     wheel_data.current_angle = 0; // to be read from the sensor.
     wheel_data.target_angle = 0; // to be set by the orchestrator.
-    wheel_data.target_wheel_rpm = 2000; // set by orchestrator.
+    wheel_data.target_wheel_rpm = 0; // set by orchestrator.
 
 
     uint8_t raw_angle_low_byte;
@@ -118,17 +119,23 @@ void app_main(void){
         if (main_isr_flag){
             loop_counter_20hz ++;
             loop_counter_1hz ++;
+            loop_counter_randtarget ++;
 
-            
+            /*
             if (gpio_get_level(BUTTON_1_GPIO_NUM) == 1) {
-                    wheel_data.target_angle = (wheel_data.target_angle + 4096 + 1) % 4096;
+                    wheel_data.target_angle = (wheel_data.target_angle + 4096 + 100) % 4096;
                 }
                 if (gpio_get_level(BUTTON_2_GPIO_NUM) == 1) {
-                    wheel_data.target_angle = (wheel_data.target_angle + 4096 - 1) % 4096;
+                    wheel_data.target_angle = (wheel_data.target_angle + 4096 - 100) % 4096;
                 }
-            
+            */
+            if (loop_counter_randtarget == 600) {
+                loop_counter_randtarget = 0;
+                wheel_data.target_angle = rand() % 4096;
+                wheel_data.target_wheel_rpm = rand() % 4000;
+            }
 
-            if (loop_counter_1hz == 100){
+            if (loop_counter_1hz == 200){
                 loop_counter_1hz = 0;
                 char display_str[21];
                 LCD_Clear_Line(1);
@@ -168,18 +175,18 @@ void app_main(void){
 
 
                 // shortest-path angle error
-                int32_t diff = (int32_t)wheel_data.current_angle - (int32_t)wheel_data.target_angle;
+                int32_t diff = (int32_t)wheel_data.target_angle - (int32_t)wheel_data.current_angle;
 
-                if (diff > 2047) diff -= 4096;
-                else if (diff < -2048) diff += 4096;
+                if (diff > 2047) diff = -4096 + diff;
+                else if (diff < -2048) diff = 4096 + diff;
                 
                 wheel_data.angle_error = diff;
 
 
                 pid_compute(wheel_data.pid_ctrl, wheel_data.angle_error, &wheel_data.motor_rpm_differential);
 
-                motor_1_data.target_rpm = wheel_data.target_motor_rpm + wheel_data.motor_rpm_differential;
-                motor_2_data.target_rpm = -wheel_data.target_motor_rpm + wheel_data.motor_rpm_differential;
+                motor_1_data.target_rpm = wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
+                motor_2_data.target_rpm = -wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
                 
                 
             }
@@ -197,7 +204,6 @@ void app_main(void){
                     speed_pause = 1000;
                 }
             */
-
 
 
 
