@@ -100,7 +100,7 @@ void app_main(void){
 
     wheel_data.current_angle = 0; // to be read from the sensor.
     wheel_data.target_angle = 0; // to be set by the orchestrator.
-    wheel_data.target_wheel_rpm = 3000; // set by orchestrator.
+    wheel_data.target_wheel_rpm = 2000; // set by orchestrator.
 
 
     uint8_t raw_angle_low_byte;
@@ -168,17 +168,20 @@ void app_main(void){
 
 
                 // shortest-path angle error
-                int32_t diff = (int32_t)wheel_data.target_angle - (int32_t)wheel_data.current_angle;
+                int32_t diff = (int32_t)wheel_data.current_angle - (int32_t)wheel_data.target_angle;
+
                 if (diff > 2047) diff -= 4096;
                 else if (diff < -2048) diff += 4096;
+                
                 wheel_data.angle_error = diff;
 
 
                 pid_compute(wheel_data.pid_ctrl, wheel_data.angle_error, &wheel_data.motor_rpm_differential);
 
                 motor_1_data.target_rpm = wheel_data.target_motor_rpm + wheel_data.motor_rpm_differential;
-                motor_2_data.target_rpm = wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
-
+                motor_2_data.target_rpm = -wheel_data.target_motor_rpm + wheel_data.motor_rpm_differential;
+                
+                
             }
 
 
@@ -208,13 +211,14 @@ void app_main(void){
             motor_1_data.new_speed = motor_1_data.feedforward + motor_1_data.pid_output;
             motor_2_data.new_speed = motor_2_data.feedforward + motor_2_data.pid_output;
 
+
             ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_1_data.pwm_comparator, map_speed_to_pulsewidth(motor_1_data.new_speed)));
             ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_2_data.pwm_comparator, map_speed_to_pulsewidth(motor_2_data.new_speed)));
             
             
-            //printf("/*%.0f,%.0f,%.0f,%.0f,", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed,motor_1_data.error);
-            //printf("%.0f,%.0f,%.0f,%.0f,", motor_2_data.rpm, motor_2_data.target_rpm, motor_2_data.new_speed,motor_2_data.error);
-            //printf("%.0d,%.0d,%.0f,%.0f*/\n", wheel_data.current_angle, wheel_data.target_angle, wheel_data.angle_error, wheel_data.motor_rpm_differential);
+            printf("/*%.0f,%.0f,%.0f,%.0f,", motor_1_data.rpm, motor_1_data.target_rpm, motor_1_data.new_speed,motor_1_data.error);
+            printf("%.0f,%.0f,%.0f,%.0f,", motor_2_data.rpm, motor_2_data.target_rpm, motor_2_data.new_speed,motor_2_data.error);
+            printf("%.0d,%.0d,%.0f,%.0f*/\n", wheel_data.current_angle, wheel_data.target_angle, wheel_data.angle_error, wheel_data.motor_rpm_differential);
             
             
             

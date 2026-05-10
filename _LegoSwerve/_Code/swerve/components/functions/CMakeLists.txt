@@ -1,4 +1,4 @@
-file(GLOB SRCS "*.c")
+file(GLOB SRCS "calculate_rpm.c" "*.c")
 
 idf_component_register(
     SRCS ${SRCS}

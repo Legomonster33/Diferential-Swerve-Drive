@@ -84,9 +84,6 @@ float calculate_rpm(motor_data_t *motor_data) {
         ESP_LOGI(TAG, "dt: %f", dt);
         ESP_LOGI(TAG, "pulses_to_median: %u", pulses_to_median);
         ESP_LOGI(TAG, "trim: %d", trim);
-        for (int i = 0; i < HALL_BUFFER_SIZE; i++) {
-            ESP_LOGI(TAG, "hall_timestamps[%d]: %u", i, hall_data->hall_timestamps[i]);
-        }
         for (int i = 0; i < pulses_to_median; i++) {
             ESP_LOGI(TAG, "dt_median_array[%d]: %u", i, dt_median_array[i]);
         }   

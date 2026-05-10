@@ -1,4 +1,4 @@
-file(GLOB SRCS "*.c")
+file(GLOB SRCS "init_capture_timer.c" "*.c")
 
 idf_component_register(
     SRCS ${SRCS}
