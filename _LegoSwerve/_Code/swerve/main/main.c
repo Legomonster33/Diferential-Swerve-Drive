@@ -95,7 +95,7 @@ void app_main(void){
     motor_1_data.rpm = 0;
     motor_2_data.rpm = 0;
 
-    uint32_t loop_counter_20hz = 0;
+    uint32_t loop_counter_50hz = 0;
     uint32_t loop_counter_1hz = 0;
     uint32_t loop_counter_randtarget = 0;
 
@@ -118,7 +118,7 @@ void app_main(void){
         
 
         if (main_isr_flag){
-            loop_counter_20hz ++;
+            loop_counter_50hz ++;
             loop_counter_1hz ++;
             loop_counter_randtarget ++;
 
@@ -163,8 +163,8 @@ void app_main(void){
                 LCD_Print(display_str);
             }
 
-            if (loop_counter_20hz == 10){ //runs at 20hz
-                loop_counter_20hz = 0;
+            if (loop_counter_50hz == 4){ //runs at 20hz
+                loop_counter_50hz = 0;
 
 
                 
