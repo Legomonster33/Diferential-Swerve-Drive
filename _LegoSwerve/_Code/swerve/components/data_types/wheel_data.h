@@ -12,6 +12,7 @@ typedef struct {
     uint16_t current_angle;
     float angle_error;
     float motor_rpm_differential;
+    bool drive_reverse;
     
 } wheel_data_t;
 

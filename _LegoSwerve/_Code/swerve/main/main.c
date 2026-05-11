@@ -99,6 +99,7 @@ void app_main(void){
     uint32_t loop_counter_1hz = 0;
     uint32_t loop_counter_randtarget = 0;
 
+    wheel_data.drive_reverse = false;
     wheel_data.current_angle = 0; // to be read from the sensor.
     wheel_data.target_angle = 0; // to be set by the orchestrator.
     wheel_data.target_wheel_rpm = 0; // set by orchestrator.
@@ -132,7 +133,7 @@ void app_main(void){
             if (loop_counter_randtarget == 600) {
                 loop_counter_randtarget = 0;
                 wheel_data.target_angle = rand() % 4096;
-                wheel_data.target_wheel_rpm = rand() % 4000;
+                wheel_data.target_wheel_rpm = rand() % 3000;
             }
 
             if (loop_counter_1hz == 200){
@@ -140,11 +141,17 @@ void app_main(void){
                 char display_str[21];
                 LCD_Clear_Line(1);
                 LCD_SetCursor(1, 0);
-                sprintf(display_str, "Tgt Ang:%-4d", wheel_data.target_angle);
+                sprintf(display_str, "TA:%-4d", wheel_data.target_angle);
+                LCD_Print(display_str);
+                LCD_SetCursor(1, 10);
+                sprintf(display_str, "TR:%4.0f", wheel_data.target_wheel_rpm);
                 LCD_Print(display_str);
                 LCD_Clear_Line(2);
                 LCD_SetCursor(2, 0);
                 sprintf(display_str, "Ang:%-4d", wheel_data.current_angle);
+                LCD_Print(display_str);
+                LCD_SetCursor(2, 10);
+                sprintf(display_str, "DrvRev:%d", wheel_data.drive_reverse);
                 LCD_Print(display_str);
                 LCD_Clear_Line(3);
                 LCD_SetCursor(3, 0);
@@ -171,22 +178,38 @@ void app_main(void){
                 wheel_data.current_angle = (raw_angle_high_byte << 8) | raw_angle_low_byte;
 
 
-                wheel_data.target_motor_rpm = wheel_data.target_wheel_rpm * wheel_config.wheel_rpm_ratio;
+                
 
 
                 // shortest-path angle error
                 int32_t diff = (int32_t)wheel_data.target_angle - (int32_t)wheel_data.current_angle;
 
-                if (diff > 2047) diff = -4096 + diff;
+                if (diff > 2048) diff = -4096 + diff;
                 else if (diff < -2048) diff = 4096 + diff;
+
+                if (diff > 1024){
+                    wheel_data.target_angle = (4096 + 1024 - wheel_data.target_angle) % 4096;
+                    wheel_data.drive_reverse = !wheel_data.drive_reverse;
+                    diff = 1024 - diff;
+                }
+                else if (diff < -1024){
+                    wheel_data.target_angle = (4096 - 1024 - wheel_data.target_angle) % 4096;
+                    wheel_data.drive_reverse = !wheel_data.drive_reverse;
+                    diff = -1024 - diff;
+                }
                 
                 wheel_data.angle_error = diff;
 
 
+                wheel_data.target_motor_rpm = wheel_data.target_wheel_rpm * wheel_config.wheel_rpm_ratio * (wheel_data.drive_reverse ? -1.0f : 1.0f);
+
                 pid_compute(wheel_data.pid_ctrl, wheel_data.angle_error, &wheel_data.motor_rpm_differential);
 
+                
                 motor_1_data.target_rpm = wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
                 motor_2_data.target_rpm = -wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
+                
+                
                 
                 
             }
