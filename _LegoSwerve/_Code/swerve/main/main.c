@@ -188,12 +188,12 @@ void app_main(void){
                 else if (diff < -2048) diff = 4096 + diff;
 
                 if (diff > 1024){
-                    wheel_data.target_angle = (4096 + 1024 - wheel_data.target_angle) % 4096;
+                    wheel_data.target_angle = (8192 + 1024 - wheel_data.target_angle) % 4096;
                     wheel_data.drive_reverse = !wheel_data.drive_reverse;
                     diff = 1024 - diff;
                 }
                 else if (diff < -1024){
-                    wheel_data.target_angle = (4096 - 1024 - wheel_data.target_angle) % 4096;
+                    wheel_data.target_angle = (8192 - 1024 - wheel_data.target_angle) % 4096;
                     wheel_data.drive_reverse = !wheel_data.drive_reverse;
                     diff = -1024 - diff;
                 }
