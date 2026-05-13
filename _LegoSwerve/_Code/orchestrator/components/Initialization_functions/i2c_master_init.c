@@ -3,7 +3,7 @@
 #include "esp_err.h"
 #include "lcd_functions.h"
 
-void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_handle_t *encoder_handle, i2c_master_dev_handle_t *lcd_handle) {
+void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_handle_t *corner_0_handle, i2c_master_dev_handle_t *lcd_handle) {
     i2c_master_bus_config_t bus_config = {
         .i2c_port = I2C_MASTER_NUM,
         .sda_io_num = I2C_MASTER_SDA_IO,
@@ -14,12 +14,12 @@ void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_handle_
     };
     ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, bus_handle));
 
-    i2c_device_config_t encoder_dev_config = {
+    i2c_device_config_t Corner_0_config = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address = 0x36,
+        .device_address = 0x68,
         .scl_speed_hz = I2C_MASTER_FREQ_HZ,
     };
-    ESP_ERROR_CHECK(i2c_master_bus_add_device(*bus_handle, &encoder_dev_config, encoder_handle));
+    ESP_ERROR_CHECK(i2c_master_bus_add_device(*bus_handle, &Corner_0_config, corner_0_handle));
 
     i2c_device_config_t lcd_dev_config = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,

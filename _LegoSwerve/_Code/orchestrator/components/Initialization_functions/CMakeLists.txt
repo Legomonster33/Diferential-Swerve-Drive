@@ -1,4 +1,4 @@
-file(GLOB SRCS "*.c")
+file(GLOB SRCS "i2c_master_init.c" "*.c")
 
 idf_component_register(
     SRCS ${SRCS}
