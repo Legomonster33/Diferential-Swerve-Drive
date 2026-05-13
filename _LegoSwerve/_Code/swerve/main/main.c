@@ -49,8 +49,8 @@ wheel_data_t wheel_data = {0};
 
 //static portMUX_TYPE my_mux = portMUX_INITIALIZER_UNLOCKED; //if we want to use taskENTER_CRITICAL
 
-#define BUTTON_1_GPIO_NUM 16
-#define BUTTON_2_GPIO_NUM 17
+#define DIPSWITCH0 16
+#define DIPSWITCH2 17
 
 i2c_master_bus_handle_t i2c_bus_handle;
 i2c_master_dev_handle_t i2c_encoder_dev_handle;
@@ -58,25 +58,28 @@ i2c_master_dev_handle_t i2c_lcd_dev_handle;
 
 void app_main(void){
 
+    gpio_config_t io_conf = {
+        .intr_type = GPIO_INTR_DISABLE,
+        .mode = GPIO_MODE_INPUT,
+        .pin_bit_mask = (1ULL << DIPSWITCH0) | (1ULL << DIPSWITCH2),
+        .pull_down_en = 1,
+        .pull_up_en = 0
+    };
+    gpio_config(&io_conf);
+
     i2c_master_init(&i2c_bus_handle, &i2c_encoder_dev_handle, &i2c_lcd_dev_handle);
 
-    i2c_new_slave_init(0x68, &wheel_data);
+
+    uint8_t i2c_slave_addr = gpio_get_level(DIPSWITCH0) ? (gpio_get_level(DIPSWITCH2) ? 0x68 : 0x69) : (gpio_get_level(DIPSWITCH2) ? 0x6A : 0x6B);
+
+    i2c_new_slave_init(i2c_slave_addr, &wheel_data);
     
-    // Initialize the LCD
     LCD_Init();
 
 
 
 
-    gpio_config_t io_conf = {
-        .intr_type = GPIO_INTR_DISABLE,
-        .mode = GPIO_MODE_INPUT,
-        .pin_bit_mask = (1ULL << BUTTON_1_GPIO_NUM) | (1ULL << BUTTON_2_GPIO_NUM),
-        .pull_down_en = 1,
-        .pull_up_en = 0
-    };
 
-    gpio_config(&io_conf);
 
 
     init_gptimer_200hz(&main_isr_flag);
@@ -126,10 +129,10 @@ void app_main(void){
             loop_counter_randtarget ++;
 
             /*
-            if (gpio_get_level(BUTTON_1_GPIO_NUM) == 1) {
+            if (gpio_get_level(DIPSWITCH0) == 1) {
                     wheel_data.target_angle = (wheel_data.target_angle + 4096 + 100) % 4096;
                 }
-                if (gpio_get_level(BUTTON_2_GPIO_NUM) == 1) {
+                if (gpio_get_level(DIPSWITCH2) == 1) {
                     wheel_data.target_angle = (wheel_data.target_angle + 4096 - 100) % 4096;
                 }
             */
@@ -243,7 +246,7 @@ void app_main(void){
             motor_1_data.new_speed = motor_1_data.feedforward + motor_1_data.pid_output;
             motor_2_data.new_speed = motor_2_data.feedforward + motor_2_data.pid_output;
 
-            if (gpio_get_level(BUTTON_1_GPIO_NUM) == 0) {
+            if (gpio_get_level(DIPSWITCH0) == 0) {
                 motor_1_data.new_speed = 0;
                 motor_2_data.new_speed = 0;
             }
