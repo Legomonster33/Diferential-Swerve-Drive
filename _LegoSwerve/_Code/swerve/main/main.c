@@ -34,6 +34,7 @@
 #include "lcd_functions.h"
 
 #include "i2c_master_init.h"
+#include "i2c_slave_init.h"
 
 
 
@@ -55,10 +56,15 @@ i2c_master_bus_handle_t i2c_bus_handle;
 i2c_master_dev_handle_t i2c_encoder_dev_handle;
 i2c_master_dev_handle_t i2c_lcd_dev_handle;
 
+i2c_slave_dev_handle_t i2c_slave_dev_handle;
+
 
 void app_main(void){
 
     i2c_master_init(&i2c_bus_handle, &i2c_encoder_dev_handle, &i2c_lcd_dev_handle);
+
+    i2c_slave_init(&i2c_slave_dev_handle);
+    
     // Initialize the LCD
     LCD_Init();
 
@@ -239,6 +245,11 @@ void app_main(void){
 
             motor_1_data.new_speed = motor_1_data.feedforward + motor_1_data.pid_output;
             motor_2_data.new_speed = motor_2_data.feedforward + motor_2_data.pid_output;
+
+            if (gpio_get_level(BUTTON_1_GPIO_NUM) == 0) {
+                motor_1_data.new_speed = 0;
+                motor_2_data.new_speed = 0;
+            }
 
 
             ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor_1_data.pwm_comparator, map_speed_to_pulsewidth(motor_1_data.new_speed)));
