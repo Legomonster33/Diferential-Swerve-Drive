@@ -84,7 +84,7 @@ void app_main(void){
                 
             i2c_master_receive(corner_0_dev_handle, (uint8_t *)&wheel_0_data, i2cdatalen, 1000 / portTICK_PERIOD_MS);
 
-            i2c_master_transmit(corner_0_dev_handle, (uint8_t *)&wheel_0_data, i2cdatalen, 1000 / portTICK_PERIOD_MS);
+            //i2c_master_transmit(corner_0_dev_handle, (uint8_t *)&wheel_0_data, i2cdatalen, 1000 / portTICK_PERIOD_MS);
 
             //should add current rpm to wheel_data_t
             printf("Target RPM: %f, Angle: %d, Target Angle: %d\n", wheel_0_data.target_motor_rpm, wheel_0_data.current_angle, wheel_0_data.target_angle);
