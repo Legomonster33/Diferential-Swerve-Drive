@@ -6,15 +6,6 @@
 
 i2c_slave_dev_handle_t handle;
 
-QueueHandle_t event_queue;
-
-uint8_t command_data;
-
-typedef enum {
-    I2C_SLAVE_EVT_RX,
-    I2C_SLAVE_EVT_TX
-} i2c_slave_event_t;
-
 uint32_t write_len = sizeof(wheel_data_t);
 static bool i2c_slave_request_cb(i2c_slave_dev_handle_t handle, const i2c_slave_request_event_data_t *evt_data, void *wheel_data_ptr)
 {
