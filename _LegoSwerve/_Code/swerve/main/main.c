@@ -56,14 +56,11 @@ i2c_master_bus_handle_t i2c_bus_handle;
 i2c_master_dev_handle_t i2c_encoder_dev_handle;
 i2c_master_dev_handle_t i2c_lcd_dev_handle;
 
-i2c_slave_dev_handle_t i2c_slave_dev_handle;
-
-
 void app_main(void){
 
     i2c_master_init(&i2c_bus_handle, &i2c_encoder_dev_handle, &i2c_lcd_dev_handle);
 
-    i2c_slave_init(&i2c_slave_dev_handle);
+    i2c_new_slave_init(0x68, &wheel_data);
     
     // Initialize the LCD
     LCD_Init();

@@ -35,7 +35,7 @@ void init_capture_timer(motor_data_t *motor_data, Motor_Config_t *motor_config)
         .prescale = 1,
         .flags.neg_edge = false,
         .flags.pos_edge = true,
-        .flags.pull_up = true,
+        //.flags.pull_up = true,
     };
     ESP_ERROR_CHECK(mcpwm_new_capture_channel(cap_timer, &cap_ch_conf, &cap_chan));
 
