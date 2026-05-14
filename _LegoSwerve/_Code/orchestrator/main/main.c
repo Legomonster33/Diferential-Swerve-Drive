@@ -32,10 +32,12 @@
 
 #include "i2c_master_init.h"
 
+#include "spi_transaction_data_t.h"
 
 
 
-#define SENDER_HOST SPI2_HOST
+
+#define SENDER_HOST SPI3_HOST
 #define GPIO_MOSI           23
 #define GPIO_MISO           19
 #define GPIO_SCLK           18
@@ -55,10 +57,6 @@ i2c_master_bus_handle_t i2c_bus_handle;
 i2c_master_dev_handle_t i2c_lcd_dev_handle;
 
 
-wheel_data_t wheel_0_data = {0};
-wheel_data_t wheel_1_data = {0};
-wheel_data_t wheel_2_data = {0};
-wheel_data_t wheel_3_data = {0};
 
 void app_main(void){
 
@@ -81,18 +79,23 @@ void app_main(void){
         .mode = 0,
         .spics_io_num = GPIO_CS,
         .cs_ena_posttrans = 3,      //Keep the CS low 3 cycles after transaction, to stop slave from missing the last bit when CS has less propagation delay than CLK
-        .queue_size = 3
+        .queue_size = 1
     };
 
-    int n = 0;
-    char sendbuf[128] = {0};
-    char recvbuf[128] = {0};
-    spi_transaction_t spi_transaction_data;
-    memset(&spi_transaction_data, 0, sizeof(spi_transaction_data));
+
+    
+
+    spi_transaction_t spi_transaction_buffer;
+
+    memset(&spi_transaction_buffer, 0, sizeof(spi_transaction_buffer));
 
     spi_bus_initialize(SENDER_HOST, &buscfg, SPI_DMA_CH_AUTO);
     
     spi_bus_add_device(SENDER_HOST, &devcfg, &spi_handle);
+
+    spi_transaction_data_t *sendbuf = spi_bus_dma_memory_alloc(SENDER_HOST, sizeof(spi_transaction_data_t), 0);
+    spi_transaction_data_t *recvbuf = spi_bus_dma_memory_alloc(SENDER_HOST, sizeof(spi_transaction_data_t), 0);
+
 
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_DISABLE,
@@ -120,19 +123,17 @@ void app_main(void){
 
         if (main_isr_flag){
             
-            int res = snprintf(sendbuf, sizeof(sendbuf),"Sender, transmission no. %04i. Last time, I received: \"%s\"", n, recvbuf);
-            if (res >= sizeof(sendbuf)) {
-                printf("Data truncated\n");
-            }
-            spi_transaction_data.length = sizeof(sendbuf) * 8;
+            sendbuf->angle = 100;
+            sendbuf->surface_speed = 200;
 
-            spi_transaction_data.tx_buffer = sendbuf;
+            spi_transaction_buffer.length = sizeof(spi_transaction_data_t) * 8;
+            spi_transaction_buffer.tx_buffer = sendbuf;
+            spi_transaction_buffer.rx_buffer = recvbuf;
 
-            spi_transaction_data.rx_buffer = recvbuf;
+            spi_device_transmit(spi_handle, &spi_transaction_buffer);
 
-            spi_device_transmit(spi_handle, &spi_transaction_data);
-            printf("Received: %s\n", recvbuf);
-            n++;
+            printf("Sent data: angle = %ld, surface_speed = %f\n", sendbuf->angle, sendbuf->surface_speed);
+            printf("received data: angle = %ld, surface_speed = %f\n", recvbuf->angle, recvbuf->surface_speed);
             
             
             main_isr_flag = false;
