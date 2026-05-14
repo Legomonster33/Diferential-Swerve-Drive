@@ -12,6 +12,6 @@
 #define I2C_MASTER_RX_BUF_DISABLE   0                           /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_TIMEOUT_MS       1000
 
-void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_handle_t *encoder_handle, i2c_master_dev_handle_t *lcd_handle);
+void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_handle_t *lcd_handle);
 
 #endif // I2C_MASTER_INIT_H

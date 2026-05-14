@@ -14,6 +14,11 @@
 #include "driver/i2c_master.h"
 #include "driver/gpio.h"
 #include "pid_ctrl.h"
+#include "driver/spi_slave.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
 
 #include "hall_data.h"
 #include "motor_data.h"
@@ -31,14 +36,23 @@
 #include "init_capture_timer.h"
 #include "init_pwm_operator.h"
 
+
+
 #include "lcd_functions.h"
 
 #include "i2c_master_init.h"
-#include "i2c_slave_init.h"
 
 
 
-#define WHEEL_RPM_RATIO 1.0f 
+#define RCV_HOST    SPI2_HOST
+
+#define GPIO_MOSI           23
+#define GPIO_MISO           19
+#define GPIO_SCLK           18
+#define GPIO_CS             5
+
+
+
 
 bool main_isr_flag = false;
 
@@ -58,6 +72,33 @@ i2c_master_dev_handle_t i2c_lcd_dev_handle;
 
 void app_main(void){
 
+    spi_bus_config_t buscfg = {
+        .mosi_io_num = GPIO_MOSI,
+        .miso_io_num = GPIO_MISO,
+        .sclk_io_num = GPIO_SCLK,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+    };
+
+    spi_slave_interface_config_t slvcfg = {
+        .mode = 0,
+        .spics_io_num = GPIO_CS,
+        .queue_size = 1,
+        .flags = 0,
+    };
+    
+    gpio_set_pull_mode(GPIO_MOSI, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode(GPIO_SCLK, GPIO_PULLUP_ONLY);
+    gpio_set_pull_mode(GPIO_CS, GPIO_PULLUP_ONLY);
+
+    spi_slave_initialize(RCV_HOST, &buscfg, &slvcfg, SPI_DMA_CH_AUTO);
+
+    char *sendbuf = spi_bus_dma_memory_alloc(RCV_HOST, 129, 0);
+    char *recvbuf = spi_bus_dma_memory_alloc(RCV_HOST, 129, 0);
+
+    spi_slave_transaction_t spi_transaction_data = {0};
+
+
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_DISABLE,
         .mode = GPIO_MODE_INPUT,
@@ -68,11 +109,6 @@ void app_main(void){
     gpio_config(&io_conf);
 
     i2c_master_init(&i2c_bus_handle, &i2c_encoder_dev_handle, &i2c_lcd_dev_handle);
-
-
-    uint8_t i2c_slave_addr = gpio_get_level(DIPSWITCH0) ? (gpio_get_level(DIPSWITCH2) ? 0x68 : 0x69) : (gpio_get_level(DIPSWITCH2) ? 0x6A : 0x6B);
-
-    i2c_new_slave_init(i2c_slave_addr, &wheel_data);
     
     LCD_Init();
 
@@ -117,25 +153,19 @@ void app_main(void){
     uint8_t raw_angle_high_byte_address = 0x0C;
 
 
+    int n = 0;
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise watchdog triggers
 
         
 
-        if (main_isr_flag){
+        //if (main_isr_flag){
             loop_counter_50hz ++;
             loop_counter_1hz ++;
             loop_counter_randtarget ++;
 
-            /*
-            if (gpio_get_level(DIPSWITCH0) == 1) {
-                    wheel_data.target_angle = (wheel_data.target_angle + 4096 + 100) % 4096;
-                }
-                if (gpio_get_level(DIPSWITCH2) == 1) {
-                    wheel_data.target_angle = (wheel_data.target_angle + 4096 - 100) % 4096;
-                }
-            */
+
             if (loop_counter_randtarget == 600) {
                 loop_counter_randtarget = 0;
                 wheel_data.target_angle = rand() % 4096;
@@ -169,9 +199,6 @@ void app_main(void){
                 LCD_Print(display_str);
             }
 
-            if (loop_counter_50hz == 4){ //runs at 20hz
-                loop_counter_50hz = 0;
-
 
                 
                 
@@ -179,62 +206,46 @@ void app_main(void){
                 
 
 
-                i2c_master_transmit_receive(i2c_encoder_dev_handle,&raw_angle_low_byte_address,1,&raw_angle_low_byte,1,I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-                i2c_master_transmit_receive(i2c_encoder_dev_handle,&raw_angle_high_byte_address,1,&raw_angle_high_byte,1,I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-                wheel_data.current_angle = (raw_angle_high_byte << 8) | raw_angle_low_byte;
+            i2c_master_transmit_receive(i2c_encoder_dev_handle,&raw_angle_low_byte_address,1,&raw_angle_low_byte,1,I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+            i2c_master_transmit_receive(i2c_encoder_dev_handle,&raw_angle_high_byte_address,1,&raw_angle_high_byte,1,I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+            wheel_data.current_angle = (raw_angle_high_byte << 8) | raw_angle_low_byte;
 
 
-                
+            
 
 
-                // shortest-path angle error
-                int32_t diff = (int32_t)wheel_data.target_angle - (int32_t)wheel_data.current_angle;
+            // shortest-path angle error
+            int32_t diff = (int32_t)wheel_data.target_angle - (int32_t)wheel_data.current_angle;
 
-                if (diff > 2048) diff = -4096 + diff;
-                else if (diff < -2048) diff = 4096 + diff;
+            if (diff > 2048) diff = -4096 + diff;
+            else if (diff < -2048) diff = 4096 + diff;
 
-                if (diff > 1024){
-                    wheel_data.target_angle = (8192 + 1024 - wheel_data.target_angle) % 4096;
-                    wheel_data.drive_reverse = !wheel_data.drive_reverse;
-                    diff = 1024 - diff;
-                }
-                else if (diff < -1024){
-                    wheel_data.target_angle = (8192 - 1024 - wheel_data.target_angle) % 4096;
-                    wheel_data.drive_reverse = !wheel_data.drive_reverse;
-                    diff = -1024 - diff;
-                }
-                
-                wheel_data.angle_error = diff;
-
-
-                wheel_data.target_motor_rpm = wheel_data.target_wheel_rpm * wheel_config.wheel_rpm_ratio * (wheel_data.drive_reverse ? -1.0f : 1.0f);
-
-                pid_compute(wheel_data.pid_ctrl, wheel_data.angle_error, &wheel_data.motor_rpm_differential);
-
-                
-                motor_1_data.target_rpm = wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
-                motor_2_data.target_rpm = -wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
-                
-                
-                
-                
+            if (diff > 1024){
+                wheel_data.target_angle = (8192 + 1024 - wheel_data.target_angle) % 4096;
+                wheel_data.drive_reverse = !wheel_data.drive_reverse;
+                diff = 1024 - diff;
             }
+            else if (diff < -1024){
+                wheel_data.target_angle = (8192 - 1024 - wheel_data.target_angle) % 4096;
+                wheel_data.drive_reverse = !wheel_data.drive_reverse;
+                diff = -1024 - diff;
+            }
+            
+            wheel_data.angle_error = diff;
 
 
-            /*
-            if (speed_pause > 0) {
-                speed_pause--;
-                }else {
-                    
-                    wheel_data.target_wheel_rpm += 500;
-                    if (wheel_data.target_wheel_rpm > 3000) {
-                        wheel_data.target_wheel_rpm = 0;
-                    }
-                    speed_pause = 1000;
-                }
-            */
+            wheel_data.target_motor_rpm = wheel_data.target_wheel_rpm * wheel_config.wheel_rpm_ratio * (wheel_data.drive_reverse ? -1.0f : 1.0f);
 
+            pid_compute(wheel_data.pid_ctrl, wheel_data.angle_error, &wheel_data.motor_rpm_differential);
 
+            
+            motor_1_data.target_rpm = wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
+            motor_2_data.target_rpm = -wheel_data.target_motor_rpm - wheel_data.motor_rpm_differential;
+            
+                
+                
+                
+            
 
 
             update_rpm(&motor_1_data);
@@ -261,10 +272,23 @@ void app_main(void){
             printf("%.0d,%.0d,%.0f,%.0f*/\n", wheel_data.current_angle, wheel_data.target_angle, wheel_data.angle_error, wheel_data.motor_rpm_differential);
             
             
+
+            memset(recvbuf, 0xA5, 129);
+            sprintf(sendbuf, "This is the receiver, sending data for transmission number %04d.", n);
+            n++;
+
+            spi_transaction_data.length = 128 * 8;
+            spi_transaction_data.tx_buffer = sendbuf;
+            spi_transaction_data.rx_buffer = recvbuf;
+
+            spi_slave_transmit(RCV_HOST, &spi_transaction_data, 0);
+
+            printf("Received: %s\n", recvbuf); 
             
             
-            main_isr_flag = false;
+            
+            //main_isr_flag = false;
         
-    }
+    //}
     }
 }
