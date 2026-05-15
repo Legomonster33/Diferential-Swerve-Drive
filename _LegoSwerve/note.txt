@@ -1,0 +1,3 @@
+surface speed is in mm/s
+
+min 0, max about 2000
