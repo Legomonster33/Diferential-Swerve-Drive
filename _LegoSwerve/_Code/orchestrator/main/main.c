@@ -115,16 +115,26 @@ void app_main(void){
 
     //uint32_t loop_counter_50hz = 0;
     //uint32_t loop_counter_1hz = 0;
-    //uint32_t loop_counter_randtarget = 0;
+    uint32_t loop_counter_randtarget = 0;
+
+    uint32_t target_angle = 0;
+    float target_surface_speed = 0;
 
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise watchdog triggers
 
         if (main_isr_flag){
-            
-            sendbuf->angle = 100;
-            sendbuf->surface_speed = 200;
+            loop_counter_randtarget++;
+
+            if (loop_counter_randtarget >= 1000){
+                loop_counter_randtarget = 0;
+                target_angle = rand() % 4096;
+                target_surface_speed = ((rand()) % 800)+200;
+            }
+
+            sendbuf->angle = target_angle;
+            sendbuf->surface_speed = target_surface_speed;
 
             spi_transaction_buffer.length = sizeof(spi_transaction_data_t) * 8;
             spi_transaction_buffer.tx_buffer = sendbuf;
