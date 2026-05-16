@@ -7,7 +7,7 @@
 #define PULSES_PER_REV  1.84615384615f
 #define TIMER_FREQ_HZ 80000000   // 1 MHz timer (microseconds)
 
-#define TARGET_WINDOW_SEC 0.125f // target window, seconds. 
+#define TARGET_WINDOW_SEC 0.06125f // target window, seconds. 
 
 #define MOTOR_STALL_TICKS 50
 

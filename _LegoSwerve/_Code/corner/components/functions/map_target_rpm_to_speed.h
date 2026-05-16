@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 
-#define LUT_SIZE 512
+#define LUT_SIZE 128
 #define RPM_MIN -10000.0f
 #define RPM_MAX  10000.0f
 

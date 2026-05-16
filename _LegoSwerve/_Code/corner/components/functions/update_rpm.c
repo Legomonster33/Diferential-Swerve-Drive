@@ -14,10 +14,7 @@ void update_rpm(motor_data_t *motor_data){
             motor_data->hall_data.ticks_since_last_trigger = 0;
         }
 
-        float smoothing_factor = 0.9f - (motor_data->target_rpm * 0.85f / 2000.0f);
-
-        if (smoothing_factor < 0.1f) smoothing_factor = 0.1f;
-        if (smoothing_factor > 0.95f) smoothing_factor = 0.95f;
+        float smoothing_factor = 1.0f;
 
         float measured_rpm = calculate_rpm(motor_data);
 
