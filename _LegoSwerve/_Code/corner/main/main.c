@@ -126,153 +126,61 @@ characterization_point_t characterization_data[LUT_SIZE];
 
 
 
-static void build_feedforward_lut(int32_t output_lut[LUT_SIZE])
-{
+static void build_feedforward_lut(int32_t output_lut[LUT_SIZE]) {
     for (int i = 0; i < LUT_SIZE; i++) {
-
-        float target_rpm =
-            -10000.0f +
-            ((20000.0f * i) / (LUT_SIZE - 1));
-
+        float target_rpm = -10000.0f + ((20000.0f * i) / (LUT_SIZE - 1));
         int32_t result_command = 0;
-
         for (int j = 0; j < LUT_SIZE - 1; j++) {
-
-            float rpm0 =
-                characterization_data[j].measured_rpm;
-
-            float rpm1 =
-                characterization_data[j + 1].measured_rpm;
-
-            // avoid divide-by-zero
-            if (fabs(rpm1 - rpm0) < 0.001f)
-                continue;
-
-            if ((target_rpm >= rpm0 &&
-                 target_rpm <= rpm1) ||
-
-                (target_rpm >= rpm1 &&
-                 target_rpm <= rpm0)) {
-
-                float t =
-                    (target_rpm - rpm0) /
-                    (rpm1 - rpm0);
-
-                result_command =
-                    characterization_data[j].command +
-
-                    t * (
-                        characterization_data[j + 1].command -
-                        characterization_data[j].command);
-
+            float rpm0 = characterization_data[j].measured_rpm;
+            float rpm1 = characterization_data[j + 1].measured_rpm;
+            if (fabs(rpm1 - rpm0) < 0.001f) continue;
+            if ((target_rpm >= rpm0 && target_rpm <= rpm1) || (target_rpm >= rpm1 && target_rpm <= rpm0)) {
+                float t = (target_rpm - rpm0) / (rpm1 - rpm0);
+                result_command = characterization_data[j].command + t * (characterization_data[j + 1].command - characterization_data[j].command);
                 break;
             }
         }
-
         output_lut[i] = result_command;
     }
 }
 
-
-static void characterize_motor(motor_data_t *motor,int32_t output_lut[LUT_SIZE])
-{
+static void characterize_motor(motor_data_t *motor, int32_t output_lut[LUT_SIZE]) {
     printf("Starting characterization...\n");
-
-    // =====================================================
-    // Sweep command range
-    // =====================================================
-
     for (int i = 0; i < LUT_SIZE; i++) {
-
-        int32_t command =
-            -1000 + ((2000 * i) / (LUT_SIZE - 1));
-
-        motor->new_speed = command;
-        motor->target_rpm = command * 10;
-
-        ESP_ERROR_CHECK(
-            mcpwm_comparator_set_compare_value(
-                motor->pwm_comparator,
-                map_speed_to_pulsewidth(command)));
-
-        // let motor stabilize
-        vTaskDelay(pdMS_TO_TICKS(
-            CHARACTERIZATION_SETTLE_MS));
-
-        // average RPM
+        int32_t command = -1000 + ((2000 * i) / (LUT_SIZE - 1));
+        motor->new_speed = command; motor->target_rpm = command * 10;
+        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor->pwm_comparator, map_speed_to_pulsewidth(command)));
+        vTaskDelay(pdMS_TO_TICKS(CHARACTERIZATION_SETTLE_MS));
         float rpm_sum = 0.0f;
-
         for (int j = 0; j < CHARACTERIZATION_SAMPLES; j++) {
-
-            
-            hall_data_t Hall_1_local_copy = motor->hall_data; 
+            hall_data_t Hall_1_local_copy = motor->hall_data;
             motor->hall_data.last_total_trigger_count = Hall_1_local_copy.total_trigger_count;
             motor->hall_data.hall_timestamps_last_index = Hall_1_local_copy.hall_timestamps_index;
-
-            if (Hall_1_local_copy.total_trigger_count == Hall_1_local_copy.last_total_trigger_count) {
-                motor->hall_data.ticks_since_last_trigger += 1;
-            } else {
-                motor->hall_data.ticks_since_last_trigger = 0;
-            }
-
-            motor->rpm = calculate_rpm(motor);
-
-            if (motor->new_speed < 0) {   // negate rpm if speed output is negative.
-                motor->rpm = -motor->rpm;
-            }
-
+            motor->hall_data.ticks_since_last_trigger = (Hall_1_local_copy.total_trigger_count == Hall_1_local_copy.last_total_trigger_count) ? motor->hall_data.ticks_since_last_trigger + 1 : 0;
+            motor->rpm = (motor->new_speed < 0) ? -calculate_rpm(motor) : calculate_rpm(motor);
             rpm_sum += motor->rpm;
-
-            vTaskDelay(pdMS_TO_TICKS(
-                CHARACTERIZATION_SAMPLE_DELAY_MS));
+            vTaskDelay(pdMS_TO_TICKS(CHARACTERIZATION_SAMPLE_DELAY_MS));
         }
-
         characterization_data[i].command = command;
-
-        characterization_data[i].measured_rpm =
-            rpm_sum / CHARACTERIZATION_SAMPLES;
-
-        printf(
-            "[%3d] CMD:%4ld RPM:%8.2f\n",
-            i,
-            characterization_data[i].command,
-            characterization_data[i].measured_rpm);
+        characterization_data[i].measured_rpm = rpm_sum / CHARACTERIZATION_SAMPLES;
+        printf("[%3d] CMD:%4ld RPM:%8.2f\n", i, characterization_data[i].command, characterization_data[i].measured_rpm);
     }
-
-    // stop motor
-    ESP_ERROR_CHECK(
-        mcpwm_comparator_set_compare_value(
-            motor->pwm_comparator,
-            map_speed_to_pulsewidth(0)));
-
+    ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(motor->pwm_comparator, map_speed_to_pulsewidth(0)));
     vTaskDelay(pdMS_TO_TICKS(1000));
-
-    // =====================================================
-    // Build RPM -> command LUT
-    // =====================================================
-
     build_feedforward_lut(output_lut);
-
     printf("Characterization complete.\n");
 }
-
 
 esp_err_t save_lut_to_nvs(const char *key,int32_t *lut,size_t lut_size){
     nvs_handle_t nvs_handle;
 
     esp_err_t err =
-        nvs_open("storage",
-                 NVS_READWRITE,
-                 &nvs_handle);
+        nvs_open("storage", NVS_READWRITE, &nvs_handle);
 
     if (err != ESP_OK)
         return err;
 
-    err = nvs_set_blob(
-        nvs_handle,
-        key,
-        lut,
-        lut_size * sizeof(int32_t));
+    err = nvs_set_blob(nvs_handle,key,lut,lut_size * sizeof(int32_t));
 
     if (err == ESP_OK) {
         err = nvs_commit(nvs_handle);
@@ -287,40 +195,27 @@ esp_err_t save_lut_to_nvs(const char *key,int32_t *lut,size_t lut_size){
 esp_err_t load_lut_from_nvs(const char *key,int32_t *lut,size_t lut_size){
     nvs_handle_t nvs_handle;
 
-    esp_err_t err =
-        nvs_open("storage",
-                 NVS_READONLY,
-                 &nvs_handle);
+    esp_err_t err = nvs_open("storage",NVS_READONLY,&nvs_handle);
 
     if (err != ESP_OK)
         return err;
 
     size_t required_size = 0;
 
-    err = nvs_get_blob(
-        nvs_handle,
-        key,
-        NULL,
-        &required_size);
+    err = nvs_get_blob(nvs_handle,key,NULL,&required_size);
 
     if (err != ESP_OK) {
         nvs_close(nvs_handle);
         return err;
     }
 
-    if (required_size !=
-        lut_size * sizeof(int32_t)) {
+    if (required_size != lut_size * sizeof(int32_t)) {
 
         nvs_close(nvs_handle);
         return ESP_ERR_INVALID_SIZE;
     }
 
-    err = nvs_get_blob(
-        nvs_handle,
-        key,
-        lut,
-        &required_size);
-
+    err = nvs_get_blob(nvs_handle,key,lut,&required_size);
     nvs_close(nvs_handle);
 
     return err;
@@ -331,7 +226,6 @@ esp_err_t load_lut_from_nvs(const char *key,int32_t *lut,size_t lut_size){
 
 
 void app_main(void){
-
     esp_err_t err = nvs_flash_init();
 
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -424,7 +318,7 @@ void app_main(void){
     uint8_t raw_angle_low_byte_address = 0x0D;
     uint8_t raw_angle_high_byte_address = 0x0C;
 
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    vTaskDelay(pdMS_TO_TICKS(1000));
     printf("before characterization");
     printf("\nDIPSWITCH1 (characterization mode) = %d\n", gpio_get_level(DIPSWITCH1));
 
@@ -434,19 +328,15 @@ void app_main(void){
         printf("CHARACTERIZING M1\n");
         printf("====================\n");
 
-        characterize_motor(
-            &motor_1_data,
-            motor_1_rpm_speed_lut);
+        characterize_motor(&motor_1_data,motor_1_rpm_speed_lut);
 
-        vTaskDelay(pdMS_TO_TICKS(2000));
+        vTaskDelay(pdMS_TO_TICKS(1000));
 
         printf("\n====================\n");
         printf("CHARACTERIZING M2\n");
         printf("====================\n");
 
-        characterize_motor(
-            &motor_2_data,
-            motor_2_rpm_speed_lut);
+        characterize_motor(&motor_2_data,motor_2_rpm_speed_lut);
 
         printf("\nDONE\n");
 
@@ -469,13 +359,13 @@ void app_main(void){
             printf("%ld, %ld\n", motor_1_rpm_speed_lut[i], motor_2_rpm_speed_lut[i]);
     }
 
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    vTaskDelay(pdMS_TO_TICKS(1000));
     printf("after characterization");
 
     while (1) {
         vTaskDelay(1); //let idle task run, otherwise watchdog triggers
 
-         wheel_data.real_angle = wheel_data.drive_reverse ? (2048 + wheel_data.current_angle) % 4096 : wheel_data.current_angle;
+        wheel_data.real_angle = wheel_data.drive_reverse ? (2048 + wheel_data.current_angle) % 4096 : wheel_data.current_angle;
         wheel_data.current_wheel_surface_speed = (fabs(motor_1_data.rpm) + fabs(motor_2_data.rpm)) / (2 * wheel_config.wheel_rpm_ratio);
         
         sendbuf->angle = wheel_data.real_angle;

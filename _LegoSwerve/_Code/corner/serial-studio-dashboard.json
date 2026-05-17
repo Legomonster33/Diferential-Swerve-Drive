@@ -382,15 +382,15 @@
                     {
                         "height": 320,
                         "id": 0,
-                        "state": "normal",
+                        "state": "maximized",
                         "width": 356,
-                        "x": 391,
-                        "y": 220
+                        "x": 733,
+                        "y": 0
                     },
                     {
                         "height": 320,
                         "id": 2,
-                        "state": "maximized",
+                        "state": "normal",
                         "width": 356,
                         "x": 581,
                         "y": 0

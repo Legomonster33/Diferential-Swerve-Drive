@@ -12,9 +12,9 @@ dependencies:
   idf:
     source:
       type: idf
-    version: 6.0.1
+    version: 5.5.3
 direct_dependencies:
 - espressif/pid_ctrl
 manifest_hash: 493bfb8ee4a276a46f252acf2023acce906b48031166d19ca1a10c80341d27af
 target: esp32
-version: 3.0.0
+version: 2.0.0

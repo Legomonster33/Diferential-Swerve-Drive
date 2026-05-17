@@ -5,6 +5,6 @@ Wheel_Config_t wheel_config = {
     .max_rpm = 11500,
     .min_rpm = -9500,
     .kp = 4.0f,
-    .ki = 0.05f,
+    .ki = 0.025f,
     .kd = 0.000f
 };
