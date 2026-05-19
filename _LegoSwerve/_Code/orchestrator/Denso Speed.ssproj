@@ -120,17 +120,10 @@
                 "autoReconnect": false,
                 "baudRate": 10,
                 "dataBitsIndex": 3,
-                "deviceId": {
-                    "description": "CP2102 USB to UART Bridge Controller",
-                    "pid": "EA60",
-                    "portName": "COM3",
-                    "serial": "0001",
-                    "vid": "10C4"
-                },
                 "dtr": true,
                 "flowControlIndex": 0,
                 "parityIndex": 0,
-                "portIndex": 1,
+                "portIndex": 0,
                 "stopBitsIndex": 0
             },
             "decoder": 0,

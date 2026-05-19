@@ -88,33 +88,33 @@ volatile size_t rc_num_symbols = 0;
 TaskHandle_t main_task_handle = NULL;
 
 
+i2c_master_bus_handle_t i2c_bus_handle;
+i2c_master_dev_handle_t i2c_lcd_dev_handle;
+i2c_master_dev_handle_t i2c_imu_dev_handle;
 
-static bool rc_rx_done_callback(
-    rmt_channel_handle_t channel,
-    const rmt_rx_done_event_data_t *edata,
-    void *user_data
-)
+static bool rc_rx_done_callback(rmt_channel_handle_t channel,
+                               const rmt_rx_done_event_data_t *edata,
+                               void *user_data)
 {
+    int ch = (int)(uintptr_t)user_data;
+
     rc_num_symbols = edata->num_symbols;
 
     BaseType_t hpw = pdFALSE;
     vTaskNotifyGiveFromISR(main_task_handle, &hpw);
 
+    rmt_receive(
+        rc_rx[ch],
+        rc_raw[ch],
+        64,
+        &(rmt_receive_config_t){
+            .signal_range_min_ns = 1000,
+            .signal_range_max_ns = 3000000
+        }
+    );
+
     return hpw == pdTRUE;
 }
-
-
-
-
-i2c_master_bus_handle_t i2c_bus_handle;
-i2c_master_dev_handle_t i2c_lcd_dev_handle;
-
-
-
-
-
-
-
 
 void init_rc_pwm_rmt(void)
 {
@@ -152,9 +152,6 @@ void init_rc_pwm_rmt(void)
 
 
 
-
-
-
 void process_rc_pwm(void)
 {
     if (ulTaskNotifyTake(pdTRUE, 0)) {
@@ -176,16 +173,6 @@ void process_rc_pwm(void)
                     }
                 }
             }
-
-            rmt_receive(
-                rc_rx[ch],
-                rc_raw[ch],
-                64,
-                &(rmt_receive_config_t){
-                    .signal_range_min_ns = 1000,
-                    .signal_range_max_ns = 3000000
-                }
-            );
         }
     }
 }
@@ -223,16 +210,21 @@ void calculate_swerve_module_targets(drivebase_data_t *drivebase, module_data_t 
     float rx = module->x_pos_mm - drivebase->x_origin_mm;
     float ry = module->y_pos_mm - drivebase->y_origin_mm;
 
-    float omega = drivebase->target_angular_velocity;
+    // Convert angular velocity from scaled range (-32768-32767) to radians per second
+    float omega = drivebase->target_angular_velocity * (TWO_PI / 32768.0f);
 
+    // Calculate velocities
     float vx = drivebase->target_x_velocity_mm_s - (omega * ry);
     float vy = drivebase->target_y_velocity_mm_s + (omega * rx);
 
+    // Calculate the angle in radians
     float angle_rad = atan2f(vy, vx);
-
     if (angle_rad < 0) angle_rad += TWO_PI;
 
-    module->target_angle = (uint16_t)((angle_rad * ENCODER_RESOLUTION) / TWO_PI);
+    // Scale the angle back to the 0-4096 range
+    module->target_angle = (uint16_t)((angle_rad * 4096.0f) / TWO_PI);
+
+    // Calculate the surface speed
     module->target_surface_speed = sqrtf((vx * vx) + (vy * vy));
 }
 
@@ -315,7 +307,7 @@ void app_main(void){
 
                 rc_new[0] = rc_new[1] = rc_new[2] = rc_new[3] = false;
 
-                printf("/*%ld, %ld, %ld, %ld*/\n",rc_pulse_us[0],rc_pulse_us[1],rc_pulse_us[2],rc_pulse_us[3]);
+                //printf("/*%ld, %ld, %ld, %ld*/\n",rc_pulse_us[0],rc_pulse_us[1],rc_pulse_us[2],rc_pulse_us[3]);
 
                 // helper lambda-style mapping (manual inline)
                 float y = ((float)((int32_t)rc_pulse_us[0] - 1500)) / 500.0f;
@@ -328,11 +320,13 @@ void app_main(void){
                 if (w > -0.15f && w < 0.15f) w = 0;
 
                 // scale to your system units
+
+                //printf("y: %f x: %f w: %f\n", y, x, w);
+
                 drivebase_data.target_y_velocity_mm_s = (y * 1000.0f)*0.1f + drivebase_data.target_y_velocity_mm_s*0.9; // simple low-pass filter to smooth out the control input
                 drivebase_data.target_x_velocity_mm_s = (x * 1000.0f)*0.1f + drivebase_data.target_x_velocity_mm_s*0.9; // simple low-pass filter to smooth out the control input
 
-                drivebase_data.target_angular_velocity = (w*10.0f)*0.1f + drivebase_data.target_angular_velocity*0.9; // simple low-pass filter to smooth out the control input
-                // drivebase target angle is cooked
+                drivebase_data.target_angular_velocity = (w*80000.0f)*0.1f + drivebase_data.target_angular_velocity*0.9; // simple low-pass filter to smooth out the control input
             }
 
 
@@ -347,9 +341,9 @@ void app_main(void){
 
             spi_device_transmit(spi_handle, &spi_transaction_buffer);
 
-            //printf("Drivebase target: vx=%f mm/s vy=%f mm/s omega=%ld rad/s\n",drivebase_data.target_x_velocity_mm_s,drivebase_data.target_y_velocity_mm_s,drivebase_data.target_angular_velocity);
+            printf("Drivebase target: vx=%f mm/s vy=%f mm/s tgt angular=%ld",drivebase_data.target_x_velocity_mm_s,drivebase_data.target_y_velocity_mm_s,drivebase_data.target_angular_velocity);
 
-            //printf("Module target: angle=%ld speed=%f mm/s\n",module_0_data.target_angle,module_0_data.target_surface_speed);
+            printf("Module target: angle=%ld speed=%f mm/s\n",module_0_data.target_angle,module_0_data.target_surface_speed);
 
             //printf("sent data: angle=%ld surface_speed=%f\n", sendbuf->angle, sendbuf->surface_speed);
 

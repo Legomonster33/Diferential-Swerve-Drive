@@ -10,10 +10,10 @@ typedef struct {
       float target_x_velocity_mm_s;
       float y_velocity_mm_s;
       float target_y_velocity_mm_s;
-      uint32_t angle;
-      uint32_t target_angle;
-      uint32_t angular_velocity;
-      uint32_t target_angular_velocity;
+      int32_t angle;
+      int32_t target_angle;
+      int32_t angular_velocity;
+      int32_t target_angular_velocity;
 } drivebase_data_t;
 
 #endif
